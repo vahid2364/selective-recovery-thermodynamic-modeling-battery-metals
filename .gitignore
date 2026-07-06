@@ -1,0 +1,51 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.spl
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.toc
+*.lof
+*.lot
+
+# Old paper drafts
+main5.*
+main6.*
+main7.*
+
+# Claude / LLM
+.claude/
+CLAUDE.md
+memory/
+*.jsonl
+
+# Archives and zips
+*.zip
+src.zip
+_archive/
+
+# Old/backup figure directories
+Figs/
+figs_mix1/
+HH_results_backup_LLNL/
+HH_results_backup_SIT/
+
+# Old simulation runs
+paper_SIT/Leach_recovery_UP2/
+paper_SIT/Leach_recovery_UP3/
+paper_SIT/Leach_recovery_UP5/
+paper_SIT/Leach_recovery_UP5.zip
+paper_SIT/UP3.zip
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
