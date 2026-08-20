@@ -36,7 +36,7 @@ Key findings:
 
 ## Requirements
 
-- **PHREEQC** 3.8.6 with the `sit.dat` database ([IPhreeqc or standalone](https://www.usgs.gov/software/phreeqc-version-3))
+- **PHREEQC** 3.8.6 with the `sit.dat` database ([IPhreeqc or standalone](https://www.usgs.gov/software/phreeqc-version-3)) — public domain software produced by the U.S. Geological Survey; free to use for any purpose with no licensing restrictions
 - **Python** ≥ 3.10 with: `numpy`, `pandas`, `matplotlib`, `scipy`, `pyDOE2` (or `pyDOE3`), `seaborn`
 
 Install Python dependencies:
