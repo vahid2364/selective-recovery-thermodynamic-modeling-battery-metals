@@ -1,13 +1,25 @@
 # Thermodynamic Modeling of NaOH Neutralization in Metal Sulfate Leachates
 
-**Paper:** *High-throughput Modeling of Thermodynamic Pathways Governing Digestion and Crystallization in Hydrometallurgical Battery Recycling*
+<div align="center">
 
-**Authors:** Vahid Attari, Cara Cronin, Blessing Cao, Ryan P. Jansonius, Michael Greenwood, Jason Hattrick-Simpers
+*High-throughput Modeling of Thermodynamic Pathways Governing Digestion and Crystallization in Hydrometallurgical Battery Recycling*
 
-**Affiliations:**
-- CanmetMaterials, Natural Resources Canada, Mississauga, ON (Attari, Hattrick-Simpers)
-- CanmetMaterials, Natural Resources Canada, Hamilton, ON (Greenwood)
-- Telescope Innovations, Vancouver, BC (Cronin, Cao, Jansonius)
+**Vahid Attari · Cara Cronin · Blessing Cao · Ryan P. Jansonius · Michael Greenwood · Jason Hattrick-Simpers**
+
+CanmetMaterials, Natural Resources Canada, Mississauga, ON *(Attari, Hattrick-Simpers)*  
+CanmetMaterials, Natural Resources Canada, Hamilton, ON *(Greenwood)*  
+Telescope Innovations, Vancouver, BC *(Cronin, Cao, Jansonius)*
+
+---
+
+![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)
+![Python](https://img.shields.io/badge/Python-≥3.10-blue?logo=python&logoColor=white)
+![PHREEQC](https://img.shields.io/badge/PHREEQC-≥3.7-green)
+![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS-lightgrey)
+
+[Report a Bug](https://github.com/vahid2364/selective-recovery-thermodynamic-modeling-battery-metals/issues/new?labels=bug) · [Request a Feature](https://github.com/vahid2364/selective-recovery-thermodynamic-modeling-battery-metals/issues/new?labels=enhancement)
+
+</div>
 
 ---
 
@@ -19,39 +31,6 @@ Key findings:
 - The precipitation hierarchy Al(OH)₃ → Fe(OH)₃ → Cu(OH)₂ → Co(OH)₂ ≈ Ni(OH)₂ → Mn(OH)₂ is **composition-invariant** across the full leachate space.
 - The Co/Ni separation window (ΔpH ≈ 0.3) establishes a **practical thermodynamic limit** — pH adjustment alone cannot reliably fractionate these metals across the investigated compositional space.
 - The Cu→Co gap (ΔpH ≈ 2.2) is a robust, exploitable window for impurity removal.
-
----
-
-## Repository Structure
-
-```
-.
-├── main8.tex / main8.pdf          # Manuscript (latest version)
-├── paper_SIT/
-│   └── Leach_recovery_UP6/        # Main simulation pipeline
-│       ├── DOE_phreeqc_init.py    # Generate LHS leachate compositions
-│       ├── DOE_phreeqc_run.py     # Run PHREEQC across all samples
-│       ├── res_input_merge.py     # Merge simulation outputs
-│       ├── load_data.py           # Load and preprocess results
-│       ├── plot_all_mix1.py       # Figures: speciation / pH curves
-│       ├── plot_all_mix2_b.py     # Figures: selectivity windows
-│       ├── plot_all_mix2_eq.py    # Figures: equilibrium analysis
-│       ├── run.sh                 # End-to-end pipeline script
-│       └── lhs_input/             # LHS sample inputs and diagnostics
-├── src/                           # Standalone plotting scripts
-│   ├── plot_SI_vs_pH_combined.py
-│   ├── plot_onset_pH.py
-│   ├── plot_pourbaix_speciation.py
-│   ├── plot_pourbaix_data_driven.py
-│   ├── plot_copula_vs_lhs.py
-│   ├── plot_lhs_kde.py
-│   └── plot_figures_C_to_new.py
-├── results/
-│   └── Leach_recovery_UP6/        # Figure outputs from simulation
-├── ICP/                           # Experimental ICP-OES data and figures
-├── Hydrometallurgy.bib            # Bibliography
-└── pdf_compile.sh                 # LaTeX compile script
-```
 
 ---
 
