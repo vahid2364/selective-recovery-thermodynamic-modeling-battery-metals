@@ -14,7 +14,7 @@ Telescope Innovations, Vancouver, BC *(Cronin, Cao, Jansonius)*
 
 ![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)
 ![Python](https://img.shields.io/badge/Python-≥3.10-blue?logo=python&logoColor=white)
-![PHREEQC](https://img.shields.io/badge/PHREEQC-≥3.7-green)
+![PHREEQC](https://img.shields.io/badge/PHREEQC-3.8.6-green)
 ![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS-lightgrey)
 
 [Report a Bug](https://github.com/vahid2364/selective-recovery-thermodynamic-modeling-battery-metals/issues/new?labels=bug) · [Request a Feature](https://github.com/vahid2364/selective-recovery-thermodynamic-modeling-battery-metals/issues/new?labels=enhancement)
@@ -36,7 +36,7 @@ Key findings:
 
 ## Requirements
 
-- **PHREEQC** ≥ 3.7 with the `sit.dat` database ([IPhreeqc or standalone](https://www.usgs.gov/software/phreeqc-version-3))
+- **PHREEQC** 3.8.6 with the `sit.dat` database ([IPhreeqc or standalone](https://www.usgs.gov/software/phreeqc-version-3))
 - **Python** ≥ 3.10 with: `numpy`, `pandas`, `matplotlib`, `scipy`, `pyDOE2` (or `pyDOE3`), `seaborn`
 
 Install Python dependencies:
