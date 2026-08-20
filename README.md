@@ -1,5 +1,3 @@
-# Thermodynamic Modeling of NaOH Neutralization in Metal Sulfate Leachates
-
 <div align="center">
 
 *High-throughput Modeling of Thermodynamic Pathways Governing Digestion and Crystallization in Hydrometallurgical Battery Recycling*
