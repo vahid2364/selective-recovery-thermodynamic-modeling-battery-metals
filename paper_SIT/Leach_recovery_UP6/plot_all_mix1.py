@@ -17,15 +17,19 @@ License:
 """
 
 import os
-from pathlib import Path
 import re
+from itertools import cycle
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
 import seaborn as sns
 from matplotlib.cm import ScalarMappable
-from itertools import cycle
+from matplotlib.colors import LogNorm, Normalize, SymLogNorm
+from matplotlib.legend_handler import HandlerTuple
+from scipy.interpolate import griddata
 
 # ---------------- CONFIG ----------------
 SAVE_PDF = False
@@ -240,12 +244,6 @@ def plot_pourbaix(dfr, PHASES, METALS, ph_col, pe_col, t_col):
     return fig
 
 
-from matplotlib.legend_handler import HandlerTuple
-import matplotlib.lines as mlines
-
-#CBF_COLORS = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
-#              "#CC79A7", "#F0E442", "#56B4E9", "#000000"]
-
 def plot_si_vs_pH(dfr, PHASES, ph_col):
     fig, ax = plt.subplots(figsize=(7.2, 5.0))
     x = dfr[ph_col].astype(float).to_numpy()
@@ -293,8 +291,8 @@ def plot_si_vs_pH(dfr, PHASES, ph_col):
     ax.set_xlim(PH_RANGE)
     ax.tick_params(axis='both', labelsize=16)
 
-    ax.text(PH_RANGE[0]*1.1, +0.15, "superstauration")
-    ax.text(PH_RANGE[0]*1.1, -0.2, "understauration")
+    ax.text(PH_RANGE[0]*1.1, +0.15, "supersaturation")
+    ax.text(PH_RANGE[0]*1.1, -0.2, "undersaturation")
 
 
     ax.legend(legend_entries, legend_labels,
@@ -302,11 +300,6 @@ def plot_si_vs_pH(dfr, PHASES, ph_col):
               frameon=True, loc='lower left', title='Phases')
 
     return fig
-
-
-from matplotlib.legend_handler import HandlerTuple
-import matplotlib.lines as mlines
-
 
 
 def plot_si_vs_T(dfr, PHASES, t_col):
@@ -393,13 +386,6 @@ def plot_free_vs_pH(dfr, METALS, ph_col):
     return fig
 
 def plot_mu_vs_pH(dfr, ph_col):
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from matplotlib.lines import Line2D
-
-    # -------------------------
-    # Columns
-    # -------------------------
     mu_col = optional_col(dfr, "mu")
     if mu_col is None:
         return None
@@ -408,9 +394,6 @@ def plot_mu_vs_pH(dfr, ph_col):
     if t_col is None:
         return None
 
-    # -------------------------
-    # Marker map
-    # -------------------------
     markers = {
         "NMC111": "o",
         "NMC523": "s",
@@ -422,12 +405,8 @@ def plot_mu_vs_pH(dfr, ph_col):
     }
 
     fig, ax = plt.subplots(figsize=(7.0, 4.6))
+    sc_ref = None
 
-    sc_ref = None  # for colorbar
-
-    # -------------------------
-    # Plot loop
-    # -------------------------
     for chem_class, group in dfr.groupby("chem"):
 
         x = group[ph_col].astype(float).to_numpy()
@@ -453,23 +432,14 @@ def plot_mu_vs_pH(dfr, ph_col):
         if not is_sdl and sc_ref is None:
             sc_ref = sc  # keep one valid mappable for colorbar
 
-    # -------------------------
-    # Colorbar
-    # -------------------------
     if sc_ref is not None:
         cbar = plt.colorbar(sc_ref, ax=ax, pad=0.07)
         cbar.set_label("pe")
 
-    # -------------------------
-    # Axes
-    # -------------------------
     ax.set_xlabel("pH")
     ax.set_ylabel("Ionic strength (μ)")
     ax.set_xlim(PH_RANGE)
 
-    # -------------------------
-    # Legend (correct styling)
-    # -------------------------
     handles = []
 
     for chem_class in dfr["chem"].unique():
@@ -500,13 +470,6 @@ def plot_mu_vs_pH(dfr, ph_col):
 
     return fig
 
-
-from scipy.interpolate import griddata
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.interpolate import Rbf
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 
 def plot_pH_T_contour(df, x_axis, t_col, var="mu", grid_res=200):
     x = df[x_axis].astype(float)
@@ -550,11 +513,6 @@ def plot_pH_T_contour(df, x_axis, t_col, var="mu", grid_res=200):
     return fig
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm, SymLogNorm
-from scipy.interpolate import griddata
-
 def plot_2Dcontour(
     df,
     x_axis,
@@ -572,20 +530,8 @@ def plot_2Dcontour(
     """
     xscale / yscale: "linear", "log", "symlog"
     cscale (color scale): "linear", "log", "symlog"
-    c_range: (vmin, vmax) for colorbar
-    x_range, y_range: (min, max) ranges to override data bounds
-    example call: plot_2Dcontour(df,"x","y",var="vorticity",x_range=(0, 5),y_range=(-2, 2),cscale="symlog",c_range=(-10, 10))
-
+    c_range: (vmin, vmax) for colorbar; x_range, y_range to override data bounds
     """
-
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LogNorm, SymLogNorm
-    from scipy.interpolate import griddata
-
-    # -----------------------------
-    # Extract and prepare inputs
-    # -----------------------------
     x = df[x_axis].astype(float).values
     y = df[y_axis].astype(float).values
     z = df[var].astype(float).values
@@ -690,10 +636,6 @@ def plot_2Dcontour(
    
 
 
-
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
 
 def plot_correlation_heatmap(dfr, core_cols):
     # numeric subset
@@ -1076,7 +1018,6 @@ def main():
 
         print(f"Done. Figures saved under: {OUT_DIR.resolve()}")
 
-        ##
         print(dfr.columns)
         dfr["OS_Fe"] = dfr["si_Fe(OH)3(s)"] >= -0.02
         dfr["OS_Al"] = dfr["si_Gibbsite"] >= -0.02 
@@ -1090,64 +1031,16 @@ def main():
         targets = ["OS_Fe","OS_Al","OS_Cu","OS_Co","OS_Ni","OS_Mn"]
         dfr["Joint"] = dfr[targets].sum(axis=1)
 
-        # for CONTOUR_VAR in ["Joint", "OS_Fe", "OS_Al", "OS_Cu", "OS_Co", "OS_Ni", "OS_Mn"]:
-        #     fig = plot_2Dcontour(dfr, "NaOH_volume", BattLeachate_volume, var=CONTOUR_VAR)
-        #     if fig is not None:
-        #         savefig(fig, f"fig9_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)  
-
-        # for CONTOUR_VAR in si_cols: #["si_FeAl2O4(s)", "si_Fe(OH)3(s)", "si_Fe(OH)3(a)", "si_Fe(OH)3(cr)", "si_Al(OH)3_metastable", "si_Gibbsite", "si_Al(OH)3(am)", "si_Ni(OH)2(s)", "si_Mn(OH)2(s)", "si_Co(OH)2(s)", "si_Cu(OH)2(s)"]:
-        #     fig = plot_2Dcontour(dfr, "NaOH_volume", BattLeachate_volume, var=CONTOUR_VAR, cscale="linear") # ,c_range=(-10e-1, 1.5)
-        #     if fig is not None:
-        #         savefig(fig, f"fig10_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)    
-
-        # for CONTOUR_VAR in ["pH"]:
-        #     fig = plot_2Dcontour(dfr, "NaOH_volume", BattLeachate_volume, var=CONTOUR_VAR, cscale="linear") # ,c_range=(-10e-1, 1.5)
-        #     if fig is not None:
-        #         savefig(fig, f"fig10_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)    
-
-        # for CONTOUR_VAR in ["pe"]:
-        #     fig = plot_2Dcontour(dfr, "NaOH_volume", BattLeachate_volume, var=CONTOUR_VAR, cscale="linear") # ,c_range=(-10e-1, 1.5)
-        #     if fig is not None:
-        #         savefig(fig, f"fig10_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)    
 
 
-        # for CONTOUR_VAR in ["si_Mn(OH)2(s)"]:
-        #     fig = plot_2Dcontour(dfr,t_col,"m_Mn2+",var=CONTOUR_VAR, yscale="log", cscale="linear")
-        #     if fig is not None:
-        #         savefig(fig, f"fig11_{CONTOUR_VAR}_contour_T_Mass_m", OUT_DIR)
-        #         plt.close(fig)    
 
-        # for CONTOUR_VAR in ["si_Mn(OH)2(s)"]:
-        #     fig = plot_2Dcontour(dfr,t_col,"Mn",var=CONTOUR_VAR, yscale="log")
-        #     if fig is not None:
-        #         savefig(fig, f"fig11_{CONTOUR_VAR}_contour_T_Mass_tot", OUT_DIR)
-        #         plt.close(fig)    
 
-        # for CONTOUR_VAR in ["Al","Fe","Cu","Co","Ni","Mn","Na"]: #["si_FeAl2O4(s)", "si_Fe(OH)3(s)", "si_Fe(OH)3(a)", "si_Fe(OH)3(cr)", "si_Al(OH)3_metastable", "si_Gibbsite", "si_Al(OH)3(am)", "si_Ni(OH)2(s)", "si_Mn(OH)2(s)", "si_Co(OH)2(s)", "si_Cu(OH)2(s)"]:
-        #     fig = plot_2Dcontour(dfr, NaOH_mole, BattLeachate_volume, var=CONTOUR_VAR, cscale="symlog") # ,c_range=(-10e-1, 1.5)
-        #     if fig is not None:
-        #         savefig(fig, f"fig12_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)  
 
-        # for CONTOUR_VAR in m_cols: 
-        #     fig = plot_2Dcontour(dfr, NaOH_mole, BattLeachate_volume, var=CONTOUR_VAR, cscale="linear") # ,c_range=(-10e-1, 1.5)
-        #     if fig is not None:
-        #         savefig(fig, f"fig13_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)  
 
-        # for CONTOUR_VAR in d_cols: 
-        #     fig = plot_2Dcontour(dfr, NaOH_mole, BattLeachate_volume, var=CONTOUR_VAR, cscale="linear") # ,c_range=(-10e-1, 1.5)
-        #     if fig is not None:
-        #         savefig(fig, f"fig14_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)   
 
-        ########
-        ########
-        ########
+
+
+
 
         dfr["objective1"] = (
             (dfr["d_Fe(OH)3(s)"] + dfr["d_Gibbsite"] + dfr["d_Cu(OH)2(s)"]) 
@@ -1162,43 +1055,26 @@ def main():
             - dfr["si_Mn(OH)2(s)"] - dfr["si_Ni(OH)2(s)"] - dfr["si_Co(OH)2(s)"]
         )
 
-        # for CONTOUR_VAR in ["objective2","objective3"]: 
-        #     fig = plot_2Dcontour(dfr, NaOH_mole, BattLeachate_volume, var=CONTOUR_VAR, cscale="linear") # ,c_range=(-10e-1, 1.5)
-        #     if fig is not None:
-        #         savefig(fig, f"fig15_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)
 
-        # for CONTOUR_VAR in ["objective1"]: 
-        #     fig = plot_2Dcontour(dfr, NaOH_mole, BattLeachate_volume, var=CONTOUR_VAR, cscale="symlog") # ,c_range=(-10e-1, 1.5)
-        #     if fig is not None:
-        #         savefig(fig, f"fig15_{CONTOUR_VAR}_contour_BattLeachate_NaOH", OUT_DIR)
-        #         plt.close(fig)
 
-        fig =plt.figure(figsize=(6.2, 4.0))
-        plt.plot(dfr["NaOH_volume"],dfr[ph_col], linestyle='None', marker='s', ms=2, lw=1,
-                markeredgecolor='k', color='blue')
+        fig = plt.figure(figsize=(6.2, 4.0))
+        plt.plot(dfr["NaOH_volume"], dfr[ph_col], linestyle='None', marker='s', ms=2, lw=1,
+                 markeredgecolor='k', color='blue')
         plt.xlabel("NaOH Volume (mL)")
         plt.ylabel("pH")
-        if fig is not None:
-            savefig(fig, f"fig16_NaOHVol_vs_pH", OUT_DIR)
-            plt.close(fig)
-        else:
-            print("No data for fig16_NaOHVol_vs_pH")
+        savefig(fig, "fig16_NaOHVol_vs_pH", OUT_DIR)
+        plt.close(fig)
 
-        fig =plt.figure(figsize=(6.2, 4.0))
+        fig = plt.figure(figsize=(6.2, 4.0))
         for d_col in phase_cols:
             if d_col in dfr.columns:
-                plt.semilogy(dfr["NaOH_volume"],dfr[d_col], linestyle='--', marker='s', ms=2, lw=2,
-                        markeredgecolor='k', markeredgewidth=0.2, label=d_col)
-        plt.xlabel("NaOH Volume (mL)")
+                plt.semilogy(dfr["NaOH_volume"], dfr[d_col], linestyle='--', marker='s', ms=2, lw=2,
+                             markeredgecolor='k', markeredgewidth=0.2, label=d_col)
         plt.xlabel("NaOH Volume (mL)")
         plt.ylabel("Mass (mol)")
         plt.legend()
-        if fig is not None:
-            savefig(fig, f"fig17_NaOHVol_vs_Precipitation_Moles", OUT_DIR)
-            plt.close(fig)
-        else:
-            print("No data for fig17_NaOHVol_vs_Mass")
+        savefig(fig, "fig17_NaOHVol_vs_Precipitation_Moles", OUT_DIR)
+        plt.close(fig)
 
 
         fig, ax1 = plt.subplots(figsize=(6.2, 4.0))
@@ -1244,37 +1120,21 @@ def main():
         plt.close(fig)
 
 
-        dAlk_dV = np.diff(dfr['Alk']) / np.diff(dfr['NaOH_volume'])
+        dfr_sorted = dfr.sort_values("NaOH_volume")
+        dAlk_dV = np.diff(dfr_sorted['Alk']) / np.diff(dfr_sorted['NaOH_volume'])
         fig = plt.figure(figsize=(6.2, 4.0))
         plt.semilogy(
-            dfr["NaOH_volume"].iloc[1:], dAlk_dV,
+            dfr_sorted["NaOH_volume"].iloc[1:], dAlk_dV,
             linestyle='None', marker='s', ms=2, lw=2,
             markeredgecolor='k', markeredgewidth=0.2
         )
-
         plt.xlabel("NaOH Volume (mL)")
-        plt.ylabel(f"$\Delta$(Alkalinity)/$\Delta$(V) (mol/L/mL)")
-        #plt.legend()
+        plt.ylabel(r"$\Delta$(Alkalinity)/$\Delta$(V) (mol/L/mL)")
         plt.tight_layout()
-        if fig is not None:
-            savefig(fig, f"fig19_NaOHVol_vs_DeltaAlk", OUT_DIR)
-            plt.close(fig)
-        else:
-            print("No data for fig19_NaOHVol_vs_DeltaAlk")
+        savefig(fig, "fig19_NaOHVol_vs_DeltaAlk", OUT_DIR)
+        plt.close(fig)
 
         
-        ########
-        ########
-        ########
-        ########
-        ########
-        ########
-        ########
-        ########
-        ########        
-        ########
-        ########
-        ########
 
         results = pd.DataFrame()
         metals = ["Ni", "Co", "Cu", "Mn", "Fe", "Al"]
@@ -1359,20 +1219,7 @@ def main():
 
         
 
-        # # =========================
-        # # 2. Define metals
-        # # =========================
-        # metals = ["Ni", "Co", "Cu", "Mn", "Fe", "Al"]
 
-        # # =========================
-        # # 3. Helper: find aqueous species columns
-        # # =========================
-        # def get_aqueous_columns(dfr, metal):
-        #     cols = []
-        #     for col in dfr.columns:
-        #         # must start with m_ (molality output)
-        #         if not col.startswith("m_"):
-        #             continue
                 
         #         # must contain metal name
         #         if metal not in col:
@@ -1390,10 +1237,6 @@ def main():
             
         #     return cols
 
-        # # =========================
-        # # 4. Compute % in solution
-        # # =========================
-        # results = pd.DataFrame()
 
         # for metal in metals:
             
@@ -1422,14 +1265,7 @@ def main():
 
         # dfr = pd.concat([dfr, results], axis=1)
         
-        #dfr = dfr[dfr['Al_pct'] > 0]
         
-        #dfr = dfr[(dfr['Al_pct'] >= 0) & (dfr['Al_pct'] <= 100)]
-        #dfr = dfr[(dfr['Cu_pct'] >= 0) & (dfr['Cu_pct'] <= 100)]
-        #dfr = dfr[(dfr['Co_pct'] >= 0) & (dfr['Co_pct'] <= 100)]
-        #dfr = dfr[(dfr['Fe_pct'] >= 0) & (dfr['Fe_pct'] <= 100)]
-        #dfr = dfr[(dfr['Mn_pct'] >= 0) & (dfr['Mn_pct'] <= 100)]
-        #dfr = dfr[(dfr['Ni_pct'] >= 0) & (dfr['Ni_pct'] <= 100)]
         print('dfr shape after filtering:', dfr.shape)
         print('dfr shape after filtering:', dfr['Al_pct'])
         print('dfr shape after filtering:', dfr['Fe_pct'])
@@ -1476,7 +1312,6 @@ def main():
         # clean metal names
         df_long["metal"] = df_long["metal"].str.replace("_pct", "")
 
-        import seaborn as sns
 
         fig, ax = plt.subplots(figsize=(8, 5))
 
