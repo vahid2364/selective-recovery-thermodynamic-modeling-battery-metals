@@ -22,10 +22,12 @@ import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, LogNorm, SymLogNorm
+from matplotlib.legend_handler import HandlerTuple
+import matplotlib.lines as mlines
 import seaborn as sns
 from matplotlib.cm import ScalarMappable
-from itertools import cycle
+from scipy.interpolate import griddata
 
 # ---------------- CONFIG ----------------
 SAVE_PDF = False
@@ -234,11 +236,6 @@ def plot_pourbaix(dfr, PHASES, METALS, ph_col, pe_col, t_col):
     return fig
 
 
-from matplotlib.legend_handler import HandlerTuple
-import matplotlib.lines as mlines
-
-#CBF_COLORS = ["#0072B2", "#E69F00", "#009E73", "#D55E00",
-#              "#CC79A7", "#F0E442", "#56B4E9", "#000000"]
 
 def plot_si_vs_pH(dfr, PHASES, ph_col):
     fig, ax = plt.subplots(figsize=(7.2, 5.0))
@@ -286,8 +283,8 @@ def plot_si_vs_pH(dfr, PHASES, ph_col):
     ax.set_ylabel("Saturation Index (SI)")
     ax.set_xlim(PH_RANGE)
 
-    ax.text(PH_RANGE[0]*1.1, +0.15, "superstauration")
-    ax.text(PH_RANGE[0]*1.1, -0.2, "understauration")
+    ax.text(PH_RANGE[0]*1.1, +0.15, "supersaturation")
+    ax.text(PH_RANGE[0]*1.1, -0.2, "undersaturation")
 
 
     ax.legend(legend_entries, legend_labels,
@@ -296,9 +293,6 @@ def plot_si_vs_pH(dfr, PHASES, ph_col):
 
     return fig
 
-
-from matplotlib.legend_handler import HandlerTuple
-import matplotlib.lines as mlines
 
 
 
@@ -398,10 +392,7 @@ def plot_mu_vs_pH(dfr, ph_col):
     if t_col is None:
         return None
 
-    # SI column
     si_col = optional_col(dfr, "si_Gibbsite")
-    if si_col is None:
-        si_col = optional_col(dfr, "si_Gibbsite")
     if si_col is None:
         return None
 
@@ -433,13 +424,6 @@ def plot_mu_vs_pH(dfr, ph_col):
 
     return fig
 
-
-from scipy.interpolate import griddata
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.interpolate import Rbf
-from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 
 def plot_pH_T_contour(df, x_axis, t_col, var="mu", grid_res=200):
     x = df[x_axis].astype(float)
@@ -483,11 +467,6 @@ def plot_pH_T_contour(df, x_axis, t_col, var="mu", grid_res=200):
     return fig
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm, SymLogNorm
-from scipy.interpolate import griddata
-
 def plot_2Dcontour(
     df,
     x_axis,
@@ -511,14 +490,6 @@ def plot_2Dcontour(
 
     """
 
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LogNorm, SymLogNorm
-    from scipy.interpolate import griddata
-
-    # -----------------------------
-    # Extract and prepare inputs
-    # -----------------------------
     x = df[x_axis].astype(float).values
     y = df[y_axis].astype(float).values
     z = df[var].astype(float).values
@@ -623,10 +594,6 @@ def plot_2Dcontour(
    
 
 
-
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
 
 def plot_correlation_heatmap(dfr, core_cols):
     # numeric subset
@@ -843,14 +810,10 @@ def main():
         ph_col   = find_col(dfr, ["pH","ph"])
         pe_col   = find_col(dfr, ["pe"])
         t_col    = find_col(dfr, ["T_C","temp","temperature"], contains="temp")
-        mol_cols = discover_phases(dfr, "_mol")
         PHASES = discover_phases(dfr)
         METALS = discover_metal_free_cols(dfr)
         si_cols = dfr.filter(like="si_").columns
         m_cols = dfr.filter(like="m_").columns
-        #print(m_cols)
-        #pause
-
         d_cols = dfr.filter(like="d_").columns
         phase_cols = [name[2:] for name in d_cols]
 
@@ -932,8 +895,6 @@ def main():
         print("\n===== TOP 40 ABSOLUTE CORRELATIONS =====\n")
         print(top40.to_string(index=False))
 
-        X = core_cols
-        y = "si_Ni(OH)2(s)"   #"si_Al(OH)3(am)" #,si_Fe(OH)3(a),si_Cu(OH)2(s),si_Co(OH)2(s),si_Ni(OH)2(s),si_Mn(OH)2(s),Solution_ID,a_Ni2+,m_Ni2+,a_Co2+,m_Co2+,a_Mn2+,m_Mn2+,a_Li+,m_Li+,Description
         # 8) Pairplot decision maps using seaborn
         #df_for_kde = dfr.loc[:, ~dfr.apply(is_constant)]
         #X_filtered = [col for col in X if col in df_for_kde.columns]
@@ -1051,18 +1012,14 @@ def main():
                 markeredgecolor='k', color='blue')
         plt.xlabel("NaOH Volume (mL)")
         plt.ylabel("pH")
-        if fig is not None:
-            savefig(fig, f"fig16_NaOHVol_vs_pH", OUT_DIR)
-            plt.close(fig)
-        else:
-            print("No data for fig16_NaOHVol_vs_pH")
+        savefig(fig, "fig16_NaOHVol_vs_pH", OUT_DIR)
+        plt.close(fig)
 
         fig =plt.figure(figsize=(6.2, 4.0))
         for d_col in phase_cols:
             if d_col in dfr.columns:
                 plt.semilogy(dfr["NaOH_volume"],dfr[d_col], linestyle='None', marker='s', ms=4, lw=2, alpha=0.7,
                         markeredgecolor='k', markeredgewidth=0.2, label=d_col)
-        plt.xlabel("NaOH Volume (mL)")
         plt.xlabel("NaOH Volume (mL)")
         plt.ylabel("Mass (mol)")
         plt.legend()
@@ -1164,54 +1121,6 @@ def main():
         savefig(fig, "fig18_NaOHVol_pH_and_Phase_DeltaMass", OUT_DIR)
         plt.close(fig)
 
-        ######
-        ######
-        ######
-
-        fig, ax1 = plt.subplots(figsize=(6.2, 4.0))
-
-        # --- Left axis: pH ---
-        ax1.plot(
-            dfr["NaOH_volume"], dfr[ph_col],
-            linestyle='None', marker='s', ms=2, lw=1,
-            markeredgecolor='k', color='blue', label="pH"
-        )
-        ax1.set_xlabel("NaOH Volume (mL)")
-        ax1.set_ylabel("pH", color='blue')
-        ax1.tick_params(axis='y', labelcolor='blue')
-
-        # --- Right axis: Mass of phases ---
-        ax2 = ax1.twinx()
-
-        line_styles = ['-', '--', '-.', ':',
-               (0, (1, 1)), (0, (3, 1, 1, 1)),
-               (0, (5, 1)), (0, (3, 5, 1, 5)),
-               (0, (5, 5)), (0, (1, 5))]
-
-        for i, d_col in enumerate(phase_cols):
-            if d_col in dfr.columns:
-                ax2.plot(
-                    dfr["NaOH_volume"], dfr[d_col],
-                    linestyle='None', #line_styles[i % len(line_styles)],
-                    lw=2,
-                    #markeredgecolor='k', markeredgewidth=0.2,
-                    label=d_col
-                )
-
-
-        ax2.set_ylabel("Mass (mol)")
-        ax2.set_yscale("log")
-
-        # --- Combined legend ---
-        lines1, labels1 = ax1.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax2.legend(lines1 + lines2, labels1 + labels2, loc="best", fontsize=10)
-        plt.tight_layout()
-        savefig(fig, "fig18_NaOHVol_pH_and_PhaseMass", OUT_DIR)
-        plt.close(fig)
-
-        ######
-        ######
         ######
 
         fig, ax1 = plt.subplots(figsize=(6.2, 4.0))
@@ -1338,23 +1247,20 @@ def main():
         ########
         ########
 
-        dAlk_dV = np.diff(dfr['Alk']) / np.diff(dfr['NaOH_volume'])
+        dfr_sorted = dfr.sort_values("NaOH_volume")
+        dAlk_dV = np.diff(dfr_sorted['Alk']) / np.diff(dfr_sorted['NaOH_volume'])
         fig = plt.figure(figsize=(6.2, 4.0))
         plt.semilogy(
-            dfr["NaOH_volume"].iloc[1:], dAlk_dV,
+            dfr_sorted["NaOH_volume"].iloc[1:], dAlk_dV,
             linestyle='None', marker='s', ms=2, lw=2,
             markeredgecolor='k', markeredgewidth=0.2
         )
 
         plt.xlabel("NaOH Volume (mL)")
-        plt.ylabel(f"$\Delta$(Alkalinity)/$\Delta$(V) (mol/L/mL)")
-        #plt.legend()
+        plt.ylabel(r"$\Delta$(Alkalinity)/$\Delta$(V) (mol/L/mL)")
         plt.tight_layout()
-        if fig is not None:
-            savefig(fig, f"fig19_NaOHVol_vs_DeltaAlk", OUT_DIR)
-            plt.close(fig)
-        else:
-            print("No data for fig19_NaOHVol_vs_DeltaAlk")
+        savefig(fig, "fig19_NaOHVol_vs_DeltaAlk", OUT_DIR)
+        plt.close(fig)
 
 
         #plt.plot(dfr["NaOH_volume"],dfr[d_cols], linestyle='--', marker='s', ms=2, lw=1,

@@ -14,14 +14,22 @@ Description:
         (3) Neutralization with sampled NaOH dose
 """
 
+import argparse
 import os
+import sys
 import itertools
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from pyDOE2 import lhs
+from pyDOE3 import lhs
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--dry-run", action="store_true",
+                    help="Sample and print diagnostics without writing any files.")
+args = parser.parse_args()
+dry_run = args.dry_run
 
 # ===============================================================
 os.makedirs('speciation_results', exist_ok=True)
@@ -97,56 +105,10 @@ eq = equivalents_added(0.294/1000, NaOH_conc)  # 0.294 mL NaOH
 print("Equivalents added:", eq)
 
 
-def mgL_to_moles(mgL, MW):
-    mg = mgL                        # mg per liter
-    g = mg / 1000                   # convert mg → g
-    mol = g / MW                    # moles = g/MW
-    return mol
-
-MW = {
-    "Al2(SO4)3": 342.15, # g/mol
-    "Fe2(SO4)3": 399.88,
-    "CuSO4": 159.6,
-    "CoSO4": 154.99,
-    "NiSO4": 154.75,
-    "MnSO4": 169.02,
-    "Li2SO4": 109.94,
-}
-
-Al_mol = mgL_to_moles(exp_mgL["Al"],   MW["Al2(SO4)3"])
-Fe_mol = mgL_to_moles(exp_mgL["Fe"],   MW["Fe2(SO4)3"])
-Cu_mol = mgL_to_moles(exp_mgL["Cu"],   MW["CuSO4"])
-Co_mol = mgL_to_moles(exp_mgL["Co"],   MW["CoSO4"])
-Ni_mol = mgL_to_moles(exp_mgL["Ni"],   MW["NiSO4"])
-Mn_mol = mgL_to_moles(exp_mgL["Mn"],   MW["MnSO4"])
-Li_mol = mgL_to_moles(exp_mgL["Li"],   MW["Li2SO4"])
-
-print(Al_mol,Fe_mol,Cu_mol,Co_mol,Ni_mol,Mn_mol,Li_mol)
 print("------------------------------------------------------")
 
-# --- 2. Define ±20% sampling window ---
-#def pm20(x):    # plus/minus 20%
-#    return (0.5 * x, 1.5 * x)
-
 def metal_to_sulfate_equivalent(exp_mgL, fe_state="Fe3+"):
-    """
-    Convert elemental metal concentrations (mg/L from ICP)
-    to stoichiometrically equivalent metal sulfate concentrations (mg/L).
-
-    Parameters
-    ----------
-    exp_mgL : dict
-        {metal_symbol: mg/L elemental concentration}
-    fe_state : str
-        "Fe3+" → Fe2(SO4)3
-        "Fe2+" → FeSO4
-
-    Returns
-    -------
-    dict
-        {metal_symbol: sulfate_mgL}
-    """
-
+    """Convert elemental ICP concentrations (mg/L) to equivalent sulfate salt concentrations (mg/L)."""
     # Atomic weights (g/mol)
     atomic_wt = {
         "Al": 26.9815,
@@ -205,160 +167,6 @@ def metal_to_sulfate_equivalent(exp_mgL, fe_state="Fe3+"):
 
 
 
-def total_metal_moles_from_icp(exp_mgL, volume_mL):
-    """
-    Convert ICP metal concentrations (mg/L) to total moles
-    in a vial of known volume.
-
-    Parameters
-    ----------
-    exp_mgL : dict
-        {metal_symbol: mg/L}
-    volume_mL : float
-        Sample volume in mL
-
-    Returns
-    -------
-    dict
-        {metal_symbol: total mol}
-    """
-
-    atomic_wt = {
-        "Al": 26.9815, # MW:342.15, #
-        "Co": 58.933,
-        "Cu": 63.546,
-        "Fe": 55.845,
-        "Li": 6.94,
-        "Mn": 54.938,
-        "Ni": 58.693,
-    }
-
-    atomic_wt_salt = {
-        "Al": 342.15, #
-        "Co": 154.99,
-        "Cu": 159.61,
-        "Fe": 399.88,
-        "Li": 109.94,
-        "Mn": 151.00,
-        "Ni": 154.76,
-    }
-
-    volume_L = volume_mL / 1000.0
-
-    total_mol = {}
-
-    # m = C * V * (1/MW) * 1000
-    for metal, mgL in exp_mgL.items():
-        mol = (mgL * volume_L) / (atomic_wt_salt[metal] * 1000)
-        total_mol[metal] = mol
-
-    return total_mol
-
-
-######
-######  Sampling functions
-######
-
-def uniform_grid_sampling(param_ranges, n_per_dim, log_params=None):
-    log_params = set(log_params or [])
-
-    keys = list(param_ranges.keys())
-    variable_params = []
-    constant_params = {}
-
-    for k in keys:
-        low, high = param_ranges[k]
-        if abs(high - low) < 1e-15:
-            constant_params[k] = low
-        else:
-            variable_params.append((k, low, high))
-
-    grids = []
-    grid_keys = []
-
-    for k, low, high in variable_params:
-        N = n_per_dim[k] if isinstance(n_per_dim, dict) else n_per_dim
-
-        if k in log_params:
-            grids.append(np.logspace(np.log10(low), np.log10(high), N))
-        else:
-            grids.append(np.linspace(low, high, N))
-
-        grid_keys.append(k)
-
-    samples_matrix = (
-        np.array(list(itertools.product(*grids)))
-        if grids else np.zeros((1, 0))
-    )
-
-    df_samples = pd.DataFrame(samples_matrix, columns=grid_keys)
-
-    for k, v in constant_params.items():
-        df_samples[k] = v
-
-    df_samples = df_samples[keys]
-    return df_samples, samples_matrix
-
-def biased_grid_sampling(param_ranges, n_per_dim, power=2.0):
-    """
-    Non-uniform grid sampling biased toward lower bounds.
-
-    param_ranges: dict {name: (low, high)}
-    n_per_dim:    int or dict {name: N}
-    power:        float > 1  (larger → more density near lower bound)
-
-    Returns:
-        df_samples : DataFrame with all parameters
-        samples_matrix : numpy array of varying-parameter samples
-    """
-
-    keys = list(param_ranges.keys())
-
-    variable_params = []
-    constant_params = {}
-
-    for k in keys:
-        low, high = param_ranges[k]
-        if abs(high - low) < 1e-15:
-            constant_params[k] = low
-        else:
-            variable_params.append((k, low, high))
-
-    grids = []
-    grid_keys = []
-
-    for k, low, high in variable_params:
-        if isinstance(n_per_dim, dict):
-            N = n_per_dim[k]
-        else:
-            N = n_per_dim
-
-        t = np.linspace(0, 1, N)
-        t_biased = t**power          # bias toward lower bound
-        grid = low + (high - low) * t_biased
-
-        grids.append(grid)
-        grid_keys.append(k)
-
-    if grids:
-        samples_matrix = np.array(list(itertools.product(*grids)))
-    else:
-        samples_matrix = np.zeros((1, 0))
-
-    df_samples = pd.DataFrame(samples_matrix, columns=grid_keys)
-
-    for k, v in constant_params.items():
-        df_samples[k] = v
-
-    df_samples = df_samples[keys]
-
-    return df_samples, samples_matrix
-
-
-######
-########  Battery composition sampling
-###### Battery composition sampling (black mass consistent)
-
 battery_classes = {
     "NMC111": {"Ni": 1, "Mn": 1, "Co": 1},
     "NMC532": {"Ni": 5, "Mn": 3, "Co": 2},
@@ -404,15 +212,7 @@ def sample_battery(param_ranges):
         else:
             comp[m] = impurity
 
-    # 4. --- enforce chemistry constraints ---
-    if chem == "LCO":
-        comp["Ni"] = 0.0
-        comp["Mn"] = 0.0
-
-    if chem == "NCA":
-        comp["Mn"] = 0.0  # NCA should not contain Mn
-
-    # 5. --- safe fill (ONLY allowed metals) ---
+    # 4. --- safe fill (ONLY allowed metals) ---
     allowed_metals = set(ratios.keys()) | set(independent_metals)
 
     for m in metals:
@@ -435,8 +235,6 @@ def sample_battery_df(param_ranges, N):
         rows.append(sample)
     
     return pd.DataFrame(rows)
-#
-#
 
 
 def lhs_sampling(param_ranges, n_samples, log_params=None):
@@ -460,44 +258,6 @@ def lhs_sampling(param_ranges, n_samples, log_params=None):
 
     return pd.DataFrame(data)
 
-
-######
-######  Unit Conversion functions
-######
-
-def convert_to_mix_fractions(V_leach_mL, V_NaOH_mL):
-    """
-    Convert real mL volumes into PHREEQC MIX fractions (dimensionless).
-
-    Parameters:
-        V_leach_mL : float  (mL of metal leachate)
-        V_NaOH_mL  : float  (mL of NaOH solution)
-
-    Returns:
-        (f_leach, f_NaOH) dimensionless fractions
-    """
-
-    # Avoid division by zero
-    V_total = V_leach_mL + V_NaOH_mL
-    if V_total <= 0:
-        return (0.0, 0.0)
-
-    f_leach = V_leach_mL / V_total
-    f_NaOH  = V_NaOH_mL  / V_total
-
-    return f_leach, f_NaOH
-
-
-def pm20_log(x):
-    """
-    ±20% *in log10 space*.
-    Handles concentrations from 1e-3 to 1e-12 smoothly.
-    """
-    if x <= 0:
-        raise ValueError("Value must be positive for log sampling.")
-
-    logx = np.log10(x)
-    return (10**(logx - 0.2), 10**(logx + 0.2))
 
 def log_span(x, orders=0):
     """
@@ -617,9 +377,6 @@ df_sulfates = sample_battery_df(comp_ranges, N=n_samples)
 print(df_sulfates)
 
 df_final = pd.concat([df_sulfates, df_other], axis=1)
-samples = df_final.copy()
-
-
 
 
 # ===============================================================
@@ -654,112 +411,95 @@ print(df_final)
 
 samples = df_final.copy()
 
-# Save
-os.makedirs("lhs_input", exist_ok=True)
-samples.to_csv(
-    "lhs_input/hydrolysis_then_NaOHmix_samples.csv",
-    index=False,
-    float_format="%.4g",
-)
-
-
-# Loop through each parameter
-for col in samples.select_dtypes(include="number").columns:
-    if is_constant(samples[col]):
-        print(f"Skipping KDE for '{col}' (constant column)")
-        continue
-
-    data = samples[col].dropna()
-    data = data[data > 0]
-    if (data <= 0).any():
-        print(f"Skipping '{col}' (non-positive values for log scale)")
-        continue
-
-    plt.figure()
-
-    bins = np.logspace(np.log10(data.min()), np.log10(data.max()), 50)
-    plt.hist(data, bins=bins, alpha=0.6, color='blue', edgecolor='black')
-    print("col:", col)
-
-    # --- overlay only relevant salts ---
-    for salt in salt_data:
-        if col[:2] in salt["stoich"]:
-            mol_per_L = salt["g_per_L"] / salt["MW"]
-
-            # scale by stoichiometric coefficient
-            value = mol_per_L * salt["stoich"][col[:2]]
-
-            plt.axvline(value, linestyle='--', linewidth=1)
-
-            plt.text(value, plt.ylim()[1]*0.72, salt["name"],
-                    rotation=90, va='bottom', ha='right', fontsize=12)
-            plt.xlabel(salt["name"], fontsize=17)
-
-    plt.xscale("log")
-    #plt.xlabel(col, fontsize=14)
-    plt.ylabel("Count", fontsize=17)
-    plt.xticks(fontsize=15)
-    plt.yticks(fontsize=15)
-    plt.tight_layout()
-    plt.savefig(f"lhs_input/hist_{col}.png")
-    plt.close()
-
-
-plt.figure(figsize=(7, 5))
-
-# --- define styles ONCE ---
-colors = [
-    "#000000",  # black
-    "#0072B2",  # blue
-    "#D55E00",  # vermillion
-    "#009E73",  # bluish green
-    "#CC79A7",  # reddish purple
-    "#E69F00",  # orange
-    "#56B4E9",  # sky blue
-]
-linestyles = ["-", "--", "-.", ":", "-", "--", "-."]
-#linewidths = [2] * len(colors)
-linewidths = [3, 3, 3, 3, 3, 3, 4]
-
-style_cycle = itertools.cycle(zip(colors, linestyles, linewidths))
-
-label_map = {
-    "Al_sulfate_mol": "Al$_2$(SO$_4$)$_3",
-    "Fe_sulfate_mol": "FeSO$_4$·7H$_2$O",
-    "Co_sulfate_mol": "CoSO$_4$·7H$_2$O",
-    "Cu_sulfate_mol": "CuSO$_4$",
-    "Ni_sulfate_mol": "NiSO$_4$·6H$_2$O",
-    "Mn_sulfate_mol": "MnSO$_4$·H$_2$O",
-    "NaOH_mole": "NaOH dose",   
-}
-
-for col in samples.select_dtypes(include="number").columns:
-    data = samples[col].dropna()
-    data = data[data > 0]
-    if len(data) == 0:
-        continue
-
-    log_data = np.log10(data)
-
-    color, ls, lw = next(style_cycle)
-
-    sns.kdeplot(
-        log_data,
-        label=label_map.get(col, col),
-        color=color,
-        linestyle=ls,
-        linewidth=lw
+if not dry_run:
+    os.makedirs("lhs_input", exist_ok=True)
+    samples.to_csv(
+        "lhs_input/hydrolysis_then_NaOHmix_samples.csv",
+        index=False,
+        float_format="%.4g",
     )
 
-# --- labels OUTSIDE loop ---
-plt.xlabel("log$_{10}$(Concentration)", fontsize=16)
-plt.ylabel("Density", fontsize=18)
-plt.tick_params(axis='both', labelsize=16)
-plt.legend(fontsize=14.5, frameon=False, handlelength=2.5)
 
-plt.tight_layout()
-plt.savefig("lhs_input/kdePlot_all.png", dpi=300)
-plt.close()
+if not dry_run:
+    for col in samples.select_dtypes(include="number").columns:
+        if is_constant(samples[col]):
+            print(f"Skipping KDE for '{col}' (constant column)")
+            continue
+
+        data = samples[col].dropna()
+        data = data[data > 0]
+        if (data <= 0).any():
+            print(f"Skipping '{col}' (non-positive values for log scale)")
+            continue
+
+        plt.figure()
+
+        bins = np.logspace(np.log10(data.min()), np.log10(data.max()), 50)
+        plt.hist(data, bins=bins, alpha=0.6, color='blue', edgecolor='black')
+        print("col:", col)
+
+        for salt in salt_data:
+            if col[:2] in salt["stoich"]:
+                mol_per_L = salt["g_per_L"] / salt["MW"]
+                value = mol_per_L * salt["stoich"][col[:2]]
+                plt.axvline(value, linestyle='--', linewidth=1)
+                plt.text(value, plt.ylim()[1]*0.72, salt["name"],
+                         rotation=90, va='bottom', ha='right', fontsize=12)
+                plt.xlabel(salt["name"], fontsize=17)
+
+        plt.xscale("log")
+        plt.ylabel("Count", fontsize=17)
+        plt.xticks(fontsize=15)
+        plt.yticks(fontsize=15)
+        plt.tight_layout()
+        plt.savefig(f"lhs_input/hist_{col}.png")
+        plt.close()
+
+    colors = [
+        "#000000",  # black
+        "#0072B2",  # blue
+        "#D55E00",  # vermillion
+        "#009E73",  # bluish green
+        "#CC79A7",  # reddish purple
+        "#E69F00",  # orange
+        "#56B4E9",  # sky blue
+    ]
+    linestyles = ["-", "--", "-.", ":", "-", "--", "-."]
+    linewidths = [3, 3, 3, 3, 3, 3, 4]
+    style_cycle = itertools.cycle(zip(colors, linestyles, linewidths))
+
+    label_map = {
+        "Al_sulfate_mol": "Al$_2$(SO$_4$)$_3",
+        "Fe_sulfate_mol": "FeSO$_4$·7H$_2$O",
+        "Co_sulfate_mol": "CoSO$_4$·7H$_2$O",
+        "Cu_sulfate_mol": "CuSO$_4$",
+        "Ni_sulfate_mol": "NiSO$_4$·6H$_2$O",
+        "Mn_sulfate_mol": "MnSO$_4$·H$_2$O",
+        "NaOH_mole": "NaOH dose",
+    }
+
+    plt.figure(figsize=(7, 5))
+    for col in samples.select_dtypes(include="number").columns:
+        data = samples[col].dropna()
+        data = data[data > 0]
+        if len(data) == 0:
+            continue
+        log_data = np.log10(data)
+        color, ls, lw = next(style_cycle)
+        sns.kdeplot(
+            log_data,
+            label=label_map.get(col, col),
+            color=color,
+            linestyle=ls,
+            linewidth=lw
+        )
+    plt.xlabel("log$_{10}$(Concentration)", fontsize=16)
+    plt.ylabel("Density", fontsize=18)
+    plt.tick_params(axis='both', labelsize=16)
+    plt.legend(fontsize=14.5, frameon=False, handlelength=2.5)
+    plt.tight_layout()
+    plt.savefig("lhs_input/kdePlot_all.png", dpi=300)
+    plt.close()
 
 
 # ===============================================================
@@ -829,10 +569,16 @@ KNOBS
 # ===============================================================
 # GENERATE INPUT BLOCKS
 # ===============================================================
+if dry_run:
+    print(f"DRY RUN: {len(samples)} samples generated. No files written.")
+    print(f"  Would write: lhs_input/hydrolysis_then_NaOHmix_samples.csv")
+    print(f"  Would write: {output_file}")
+    sys.exit(0)
+
 with open(output_file, "w") as f:
     f.write(header)
 
-    for idx, row in samples.iloc[0:].iterrows():
+    for idx, row in samples.iterrows():
         sol_id = idx + 1
         #scale = 0.01 * (row.V_batt_pct / 5.0)  # metal sulfate scaling
 

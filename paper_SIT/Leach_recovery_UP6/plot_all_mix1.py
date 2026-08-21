@@ -448,7 +448,7 @@ def plot_mu_vs_pH(dfr, ph_col):
         marker = '*' if is_sdl else markers.get(chem_class, "x")
 
         handles.append(
-            Line2D(
+            mlines.Line2D(
                 [0], [0],
                 marker=marker,
                 linestyle="None",
