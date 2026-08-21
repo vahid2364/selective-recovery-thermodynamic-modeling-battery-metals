@@ -237,12 +237,13 @@ def plot_speciation_with_solid(df, tag):
         solid_frac = []   # (n_bins,)
         other_frac = []   # (n_bins,) — unresolved dissolved
 
+        n_aq = len(aq_cols)
         for lo, hi in zip(pH_bins[:-1], pH_bins[1:]):
             mask = (df["pH"] >= lo) & (df["pH"] < hi)
             sub  = df[mask]
             n    = len(sub)
             if n == 0:
-                aq_fracs.append([np.nan] * len(aq_cols))
+                aq_fracs.append(np.full(n_aq, np.nan))
                 solid_frac.append(np.nan); other_frac.append(np.nan)
                 continue
 
@@ -261,13 +262,16 @@ def plot_speciation_with_solid(df, tag):
                 stoich = SPECIES_STOICH.get(col, 1)
                 aq_metal[col] = sub[col].fillna(0) * stoich
 
-            aq_f   = aq_metal.div(total, axis=0).mean().values
-            sol_f  = (sol / total).mean()
+            aq_f = np.asarray(aq_metal.div(total, axis=0).mean(), dtype=float).ravel()
+            if len(aq_f) != n_aq:
+                aq_f = np.full(n_aq, np.nan)
+
+            sol_f  = float(np.nanmean(sol / total))
 
             # unresolved dissolved = total_dissolved − sum of mapped metal contributions
             mapped_metal_sum = aq_metal.sum(axis=1)
             other = (tot_diss - mapped_metal_sum).clip(lower=0)
-            oth_f = (other / total).mean()
+            oth_f = float(np.nanmean(other / total))
 
             aq_fracs.append(aq_f)
             solid_frac.append(sol_f)
@@ -277,7 +281,8 @@ def plot_speciation_with_solid(df, tag):
         solid_frac = np.array(solid_frac)
         other_frac = np.array(other_frac)
 
-        has_data = np.nanmax(aq_fracs, axis=0) > 0.005
+        with np.errstate(all="ignore"):  # suppress all-NaN slice warning for empty pH bins
+            has_data = np.nanmax(aq_fracs, axis=0) > 0.005
 
         # ── stacked identified aqueous bands ──────────────────────────────────
         bottom = np.zeros(len(pH_mid))
@@ -365,12 +370,32 @@ coprecip_matrix(df_eq, -0.05,  "eq",   "Co-precipitation risk (phase equilibrium
 METAL_INPUT_COLS = {m: f"{m}_sulfate_mol" for m in ["Al","Fe","Cu","Ni","Co","Mn"]}
 DISSOLVED_COLS   = {m: m for m in ["Al","Fe","Cu","Ni","Co","Mn"]}
 GROUPS = {"group1": ["Al","Fe","Cu"], "group2": ["Ni","Co","Mn"]}
+# Al_sulfate_mol is moles of Al₂(SO₄)₃ — 2 Al atoms per formula unit
+INPUT_STOICH = {"Al": 2, "Fe": 1, "Cu": 1, "Ni": 1, "Co": 1, "Mn": 1}
+
+_TOL_LOW  = -0.05   # more than 5% below zero → likely a real mass-balance error
+_TOL_HIGH =  1.10   # more than 10% above 1  → likely a stoichiometry factor error
+
+
+def _check_recovery_bounds(raw, metal):
+    """Warn if raw recovery values fall outside physically plausible bounds."""
+    n_low  = (raw < _TOL_LOW).sum()
+    n_high = (raw > _TOL_HIGH).sum()
+    if n_low > 0:
+        print(f"  WARNING [{metal}]: {n_low} rows have recovery < {_TOL_LOW:.0%} "
+              f"(min={raw.min():.3f}) — possible mass-balance error in PHREEQC output.")
+    if n_high > 0:
+        print(f"  WARNING [{metal}]: {n_high} rows have recovery > {_TOL_HIGH:.0%} "
+              f"(max={raw.max():.3f}) — possible stoichiometry factor error in INPUT_STOICH.")
 
 
 def _recovery_series(df, metal):
     pH_bins = np.arange(2, 12.5, 0.25)
     pH_mid  = 0.5 * (pH_bins[:-1] + pH_bins[1:])
-    rec = (df[DISSOLVED_COLS[metal]] / df[METAL_INPUT_COLS[metal]].replace(0, np.nan)).clip(0, 1)
+    denom = df[METAL_INPUT_COLS[metal]].replace(0, np.nan) * INPUT_STOICH[metal]
+    raw = df[DISSOLVED_COLS[metal]] / denom
+    _check_recovery_bounds(raw.dropna(), metal)
+    rec = raw.clip(0, 1)
     tmp = df[["pH"]].copy(); tmp["rec"] = rec
     medians, q25s, q75s = [], [], []
     for lo, hi in zip(pH_bins[:-1], pH_bins[1:]):
@@ -581,7 +606,10 @@ def plot_recovery_single_pct(df, tag, title):
 def _recovery_percentiles(df, metal, pH_bins):
     """Return pH_mid and dict of percentile arrays (5, 25, 50, 75, 95)."""
     pH_mid = 0.5 * (pH_bins[:-1] + pH_bins[1:])
-    rec = (df[DISSOLVED_COLS[metal]] / df[METAL_INPUT_COLS[metal]].replace(0, np.nan)).clip(0, 1)
+    denom = df[METAL_INPUT_COLS[metal]].replace(0, np.nan) * INPUT_STOICH[metal]
+    raw = df[DISSOLVED_COLS[metal]] / denom
+    _check_recovery_bounds(raw.dropna(), metal)
+    rec = raw.clip(0, 1)
     tmp = df[["pH"]].copy(); tmp["rec"] = rec
     pcts = {p: [] for p in [5, 25, 50, 75, 95]}
     for lo, hi in zip(pH_bins[:-1], pH_bins[1:]):
