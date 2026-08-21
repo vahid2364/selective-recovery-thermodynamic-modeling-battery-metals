@@ -40,7 +40,15 @@
 
 
 \title{High-throughput Modeling of Thermodynamic Pathways Governing Digestion and Crystallization in Hydrometallurgical Battery Recycling}
-\author{Vahid Attari$^a$, Cara Cronin$^c$, Blessing Cao$^c$, Ryan P. Jansonius$^c$, Michael Greenwood$^b$, Jason Hattrick-Simpers$^a$}
+
+\author[1]{Vahid Attari\corref{cor1}}
+\ead{vahid.attari@nrcan-rncan.gc.ca}
+\author[3]{Cara Cronin}
+\author[3]{Blessing Cao}
+\author[3]{Ryan P. Jansonius}
+\author[2]{Michael Greenwood}
+\author[1]{Jason Hattrick-Simpers}
+
 \affiliation[1]{organization={CanmetMaterials, Natural Resources Canada},
                 city={2620 Speakman Drive, Mississauga, ON},
                 postcode={L5K1B4}, 
@@ -58,9 +66,12 @@
                 state={BC},
                 country={Canada}}
 
+\cortext[cor1]{Corresponding author}
+
+
 %% Abstract
 \begin{abstract}
-Autonomous process discovery for battery recycling benefits from a principled definition of where in the experimental space to search before the self-driving laboratory begins due to the large experimental parameter space. For pH-staged hydroxide recovery of critical metals from spent lithium-ion battery leachates, this search space has remained undefined: it has been unclear whether the thermodynamic precipitation sequence is composition-specific or universal, which separation windows are exploitable, and which are fundamentally inaccessible to pH control. Here we resolve these questions by propagating 12{,}001 leachate compositions spanning the full variability of NMC, NCA, and LCO cathode chemistries through a Gibbs free-energy minimization framework, and show that the precipitation hierarchy Al(OH)$_3$ $\to$ Fe(OH)$_3$ $\to$ Cu(OH)$_2$ $\to$ Co(OH)$_2$ $\approx$ Ni(OH)$_2$ $\to$ Mn(OH)$_2$ is composition-invariant across the entire space. The Cu$\to$Co selectivity window of $\Delta$pH~$\approx$~2.2 defines a robust, exploitable target for impurity removal, while the Co/Ni window of $\Delta$pH~$\approx$~0.3 establishes a practical thermodynamic limit: pH adjustment alone is insufficient to reliably fractionate these two metals across the investigated compositional and operating space, and separation requires complementary chemical or physical means. High-throughput SDL experimentation confirmed the predicted hierarchy and revealed that above a threshold pH, ICP-OES measurements overestimate the thermodynamically active free-ion concentration because they cannot distinguish precipitable free ions from inert solution complexes, a blind spot that must be accounted for in autonomous pH control. These results convert thermodynamic simulation from a descriptive tool into a search-space definition layer for multi-fidelity SDL campaign design in battery recycling.
+Autonomous process discovery for battery recycling benefits from a principled definition of where in the experimental space to search before the self-driving laboratory begins due to the large experimental parameter space. For pH-staged hydroxide recovery of critical metals from spent lithium-ion battery leachates, this search space has remained undefined: it has been unclear whether the thermodynamic precipitation sequence is composition-specific or universal, which separation windows are exploitable, and which are fundamentally inaccessible to pH control. Here we resolve these questions by propagating 12{,}001 leachate compositions spanning the full variability of NMC cathode chemistries through a Gibbs free-energy minimization framework, and show that the precipitation hierarchy Al(OH)$_3$ $\to$ Fe(OH)$_3$ $\to$ Cu(OH)$_2$ $\to$ Co(OH)$_2$ $\approx$ Ni(OH)$_2$ $\to$ Mn(OH)$_2$ is composition-invariant across the entire space. The Cu$\to$Co selectivity window of $\Delta$pH~$\approx$~2.2 defines a robust, exploitable target for impurity removal, while the Co/Ni window of $\Delta$pH~$\approx$~0.3 establishes a practical thermodynamic limit: pH adjustment alone is insufficient to reliably fractionate these two metals across the investigated compositional and operating space, and separation requires complementary chemical or physical means. High-throughput SDL experimentation confirmed the predicted hierarchy and revealed that above a threshold pH, ICP-OES measurements overestimate the thermodynamically active free-ion concentration because they cannot distinguish precipitable free ions from inert solution complexes, a blind spot that must be accounted for in autonomous pH control. These results convert thermodynamic simulation from a descriptive tool into a search-space definition layer for multi-fidelity SDL campaign design in battery recycling.
 \end{abstract}
 
 
@@ -71,7 +82,7 @@ Autonomous process discovery for battery recycling benefits from a principled de
 
 %%Research highlights
 \begin{highlights}
-\item Hydroxide precipitation of Al, Fe, Cu, Co, Ni, and Mn follows a composition-invariant thermodynamic sequence predicted across 12,001 simulated NMC/NCA/LCO leachate compositions
+\item Hydroxide precipitation of Al, Fe, Cu, Co, Ni, and Mn follows a composition-invariant thermodynamic sequence predicted across 12,001 simulated NMC leachate compositions
 \item The Co/Ni separation window of $\Delta$pH~$\approx$~0.3 establishes a practical thermodynamic limit for fractionation by pH control alone across the investigated compositional space
 \item The Cu$\to$Co selectivity gap of $\Delta$pH~$\approx$~2.2 defines a robust, exploitable window for impurity removal before valuable cathode metals precipitate
 \item High-throughput SDL experimentation across a factorial dilution--alkalinity matrix confirmed the predicted precipitation hierarchy and identified an analytical horizon limiting ICP-OES feedback at high pH
@@ -120,7 +131,7 @@ A subtler but equally consequential variable is the precipitant dosing pathway. 
 \end{figure*}
 
 %P5  Here we show + findings + significance
-Fig.~\ref{fig:process_schematic} illustrates the two-tier framework developed in this work: a chain of thermodynamic models covering leachate speciation and the full precipitation sequence, coupled with SDL-based HTE experimentation for validation. Here we show that alkaline neutralization of multicomponent battery leachates follows a thermodynamically robust precipitation sequence, Al(OH)$_3$ $\to$ Fe(OH)$_3$ $\to$ Cu(OH)$_2$ $\to$ Co(OH)$_2$ $\approx$ Ni(OH)$_2$ $\to$ Mn(OH)$_2$, conserved across NMC, NCA, and LCO cathode chemistries. Selectivity windows between consecutive phases span as little as 0.3 pH units for Co and Ni, rendering their fractionation by pH control alone thermodynamically impossible. Thermodynamic modeling further reveals that precipitation selectivity is intrinsically path-dependent: incremental and instantaneous dosing of identical leachates yield measurably different metal distributions. We develop a thermodynamic modeling framework for HTE process design and validate its predictions using automated HTE experiments across a factorial design of leachate compositions, providing a physics-informed search space for future multi-fidelity and autonomous optimization. Section~\ref{sec:methods} describes the thermodynamic modeling approach and uncertainty quantification scheme alongside the HTE experimental setup. Section~\ref{sec:results} presents the results in two parts: Part A examines metal sulfate speciation and hydrolysis equilibria in the pre-neutralization leachate, and Part B traces the full hydroxide precipitation sequence during base addition, including saturation index evolution, speciation, co-precipitation risk, and experimental validation. Section~\ref{sec:conclusions} summarizes the key findings and their implications for process design.
+Fig.~\ref{fig:process_schematic} illustrates the two-tier framework developed in this work: a chain of thermodynamic models covering leachate speciation and the full precipitation sequence, coupled with SDL-based HTE experimentation for validation. Here we show that alkaline neutralization of multicomponent battery leachates follows a thermodynamically robust precipitation sequence, Al(OH)$_3$ $\to$ Fe(OH)$_3$ $\to$ Cu(OH)$_2$ $\to$ Co(OH)$_2$ $\approx$ Ni(OH)$_2$ $\to$ Mn(OH)$_2$, conserved across NMC cathode chemistries. Selectivity windows between consecutive phases span as little as 0.3 pH units for Co and Ni, rendering their fractionation by pH control alone thermodynamically impossible. Thermodynamic modeling further reveals that precipitation selectivity is intrinsically path-dependent: incremental and instantaneous dosing of identical leachates yield measurably different metal distributions. We develop a thermodynamic modeling framework for HTE process design and validate its predictions using automated HTE experiments across a factorial design of leachate compositions, providing a physics-informed search space for future multi-fidelity and autonomous optimization. Section~\ref{sec:methods} describes the thermodynamic modeling approach and uncertainty quantification scheme alongside the HTE experimental setup. Section~\ref{sec:results} presents the results in two parts: Part A examines metal sulfate speciation and hydrolysis equilibria in the pre-neutralization leachate, and Part B traces the full hydroxide precipitation sequence during base addition, including saturation index evolution, speciation, co-precipitation risk, and experimental validation. Section~\ref{sec:conclusions} summarizes the key findings and their implications for process design.
 
 %%%%%
 %%%%%
@@ -238,19 +249,11 @@ A positive $\mathrm{SI}_p$ indicates that the solution is supersaturated with re
 %%%%%
 %%%%%
 
-%\subsection{Analytical Model of Henderson--Hasselbalch}
-
-%The Henderson-Hasselbalch (HH) equation provides an analytical relationship between solution pH and the ratio of conjugate base to acid concentrations in a weak acid--base system at equilibrium. It is derived from the acid dissociation constant and is written as
-%\begin{equation}
-%\mathrm{pH} = \mathrm{p}K_a + \log_{10}\!\left(\frac{[\mathrm{A}^-]}{[\mathrm{HA}]}\right),    
-%\end{equation}
-%where $\mathrm{p}K_a$ is the negative logarithm of the acid dissociation constant, and $[\mathrm{A}^-]$ and $[\mathrm{HA}]$ are the concentrations (or activities) of the conjugate base and acid, respectively. In neutralization and buffering contexts, the HH equation captures the smooth, sigmoidal pH evolution arising from progressive conversion between protonated and deprotonated species. It is an equilibrium, lumped-parameter model that neglects kinetics, non-ideal activities, and multi-species hydrolysis, and therefore serves as a first-order analytical benchmark rather than a fully predictive description of complex multicomponent systems.
-
 \subsection{Uncertainty Quantification}
 
 To assess the sensitivity of thermodynamic predictions to variability in battery feedstock composition, input uncertainties are propagated through the chain of leaching and precipitation models using a stratified sampling approach that combines stoichiometrically constrained cathode chemistry selection with Latin Hypercube Sampling (LHS) for impurity concentrations. A total of 12{,}001 leachate compositions are modeled: 12{,}000 drawn via LHS to ensure broad coverage of the input space, plus one composition corresponding to the HTE experimental leachate used for experimental validation. The resulting joint input distribution spans several orders of magnitude across all six metals and NaOH dose.
 
-For cathode-derived metals (Ni, Co, Mn), a battery chemistry is selected at random from four NMC variants: NMC111, NMC532, NMC622, and NMC811 as well as NCA and LCO categories (Table~\ref{tab:battery_chem_types}). The nominal stoichiometric ratios of Ni, Co, and Mn for each chemistry are perturbed by 5\% Gaussian noise to reflect realistic manufacturing variability, then normalized to unit sum to preserve relative proportions. The total cathode loading is drawn from a uniform distribution over the physically meaningful concentration bounds for the reference metal (Ni), and all other cathode metals are scaled accordingly.
+For cathode-derived metals (Ni, Co, Mn), a battery chemistry is selected at random from four NMC variants: NMC111, NMC523, NMC532, NMC622, and NMC811 (Table~\ref{tab:battery_chem_types}). The nominal stoichiometric ratios of Ni, Co, and Mn for each chemistry are perturbed by 5\% Gaussian noise to reflect realistic manufacturing variability, then normalized to unit sum to preserve relative proportions. The total cathode loading is drawn from a uniform distribution over the physically meaningful concentration bounds for the reference metal (Ni), and all other cathode metals are scaled accordingly.
 
 Al, Fe, and Cu are treated as independent process impurities originating from hardware dissolution (current collectors, casing, electrode foils) rather than cathode stoichiometry. Their concentrations are sampled independently using LHS over prescribed minimum and maximum bounds; no parametric distribution shape is assumed beyond the range. Where a cathode chemistry already contributes a small Al fraction, the independently sampled Al impurity is added at a reduced weight to avoid double-counting. The NaOH dose is likewise sampled via LHS over a range spanning sub-stoichiometric to excess addition relative to the total metal hydroxide demand. For variables spanning multiple orders of magnitude, sampling is performed on a log$_{10}$ scale to ensure uniform coverage across the full concentration range. Each of the 12{,}001 compositions is propagated independently through the full two-stage model (leaching and precipitation), yielding output distributions of pH, pe, ionic strength, aqueous speciation, saturation indices, and precipitation onset. For each output variable, the median, interquartile range (IQR), and 10th--90th percentile bands are computed to characterize composition-driven variability. In addition to composition-driven variability, three dosing analogues representing distinct hydroxide delivery pathways are evaluated across the same leachate ensemble (Fig.~\ref{fig:analogue_schematic}).
 
@@ -481,10 +484,6 @@ The following results are organized according to the two-stage framework and thr
 \subsection{Part A: Metal Sulfate Dissolution and Hydrolysis}
 
 Part A characterizes the pre-neutralization leachate across five aspects: the leachate chemistry and speciation, the reference composition thermodynamic state, the dominant controls on ionic strength, the stoichiometric correlation structure among cathode metals, and the pH drivers governing acidification across the full compositional space.
-
-% ---- ORIGINAL TEXT (preserved for reference) ----
-% We first investigated a chemically realistic hydrolyzed leachate representative of hydromethalurgical battery recycling streams prior to base addition. Metal sulfates (Al, Fe, Cu, Co, Ni, Mn) were dissolved in deionized water at 25~$^\circ$C, where multivalent cations underwent hydrolysis and sulfate complexation. These reactions generated acidity, produced intrinsic buffering, and yielded a speciation landscape dominated by hydroxo- and sulfate-complexed species. Although the initiated model initialized near neutral pH, the system rapidly equilibrated to acidic conditions. To ensure realistic feed variability, metal inputs were sampled from representative lithium-ion battery chemistries (e.g., NMC111-NMC811, NCA, LCO), where Ni, Mn, and Co (and Al in NCA) followed stoichiometric ratios with stochastic variation. Additional independent contributions from Al, Fe, and Cu accounted for black mass and hardware sources. A representative baseline instance from this sampling space was tabulated in Table~\ref{tab:baseline_leachate}. The equilibrated solution was acidic (pH~=~4.19) with ionic strength (2.21~mol\,kg$^{-1}$), reflecting the concentrated metal sulfate loading of this NMC532 reference composition; all metals remained essentially fully dissolved (${\sim}$100\%), confirming undersaturation with respect to all hydroxide phases. The negligible charge imbalance ($-1.94\times10^{-12}$) confirmed numerical consistency. The pe of 6.35 indicated mildly oxidizing conditions; at this redox potential Fe$^{2+}$ is the thermodynamically favored iron species (the Fe$^{3+}$/Fe$^{2+}$ boundary lies near pe~$\approx$~13 at pH~4). Across the 12{,}001-sample ensemble, ionic strength was the dominant control on solution chemistry (Fig.~\ref{fig:leaching_corr}). The correlation matrix revealed strong stoichiometric couplings among the NMC cathode metals: Co--Mn (0.89) was the dominant pair, with Co--Ni and Ni--Mn both moderate (0.42). This structure directly reflected the NMC stoichiometric hierarchy: as cathode chemistry shifted from NMC111 to NMC811, Co and Mn were the co-declining minority metals (both falling from $\sim$1/3 to $\sim$1/10 of the transition-metal fraction), while Ni rose in the opposite direction. Co and Mn therefore co-varied strongly across the ensemble, whereas Ni was partially anti-correlated with both, yielding the observed weaker Co--Ni and Ni--Mn couplings. Free sulfate activity (SO$_4^{2-}$) was strongly coupled to ionic strength (0.76), confirming that sulfate was the dominant ionic strength driver in this leachate system; Co and Mn also showed strong positive correlations with free SO$_4^{2-}$ (0.74 each), consistent with their large sulfate inputs, while Fe showed near-zero correlation (0.03), reflecting near-complete sequestration of Fe-associated sulfate into the FeSO$_4$ complex. Among the pH correlations, Al loading exerted the strongest acidifying effect ($r = -0.82$), consistent with Al$^{3+}$ being one of the most strongly hydrolyzing cations: the reaction Al$^{3+}$ + 3H$_2$O $\rightleftharpoons$ Al(OH)$_3$(s) + 3H$^+$ releases three protons per mole, depressing the equilibrium pH significantly~\cite{stumm_aquatic_1996, may_gibbsite_1979}. Fe loading was the second strongest pH driver ($r = -0.64$), reflecting Fe$^{3+}$ hydrolysis, while Cu, Ni, Co, and Mn showed negligible pH correlations ($|r| \leq 0.14$), consistent with their weaker hydrolysis tendencies and independent LHS sampling. These couplings have practical implications for pH control: leachates with variable Al or Fe content exhibited systematic pH shifts that had to be accounted for in NaOH dosing strategies. All dissolution fractions remained near 100\% across the pre-neutralization pH range ($\approx$3.7--4.7) spanned by the LHS ensemble (Fig.~\ref{fig:leaching}(b)), confirming undersaturation with respect to all hydroxide phases prior to base addition.
-% ---- END ORIGINAL TEXT ----
 
 % P1 — Leachate chemistry and speciation
 When metal sulfates (Al, Fe, Cu, Co, Ni, Mn) were dissolved and allowed to equilibrate at 25~$^\circ$C, the system acidified spontaneously from near-neutral initialization to strongly acidic conditions without any base addition. This acidification is thermodynamically driven: Al$^{3+}$ and Fe$^{3+}$ undergo hydrolysis releasing three protons per mole, while concurrent sulfate complexation partitioned dissolved metals between free ionic forms and neutral complexes (e.g., FeSO$_4$, CoSO$_4$, NiSO$_4$), reducing free-ion activities below total dissolved concentrations. This speciation shift has a direct consequence for phase stability: because $K_{sp}$ is defined in terms of free-ion activities rather than total dissolved concentrations, the effective solubility threshold for each hydroxide phase is reached at a higher total metal concentration than simple solubility product arguments would suggest.
@@ -823,7 +822,7 @@ Bridging the quantitative gap between model and experiment is the natural next s
 
 \section{Conclusions}\label{sec:conclusions}
 
-Thermodynamic modeling of NaOH neutralization across 12{,}001 simulated leachate compositions, spanning NMC, NCA, and LCO cathode chemistries, established that hydroxide precipitation in multicomponent battery leachates follows a robust, thermodynamically ordered sequence: Al(OH)$_3$(s) $\to$ Fe(OH)$_3$(s) $\to$ Cu(OH)$_2$(s) $\to$ Co(OH)$_2$(s) $\approx$ Ni(OH)$_2$(s) $\to$ Mn(OH)$_2$(s). This hierarchy was conserved across the full compositional space, confirming that it reflects the relative solubility products of these phases within the concentration ranges characteristic of battery leachates rather than being composition-specific.
+Thermodynamic modeling of NaOH neutralization across 12{,}001 simulated leachate compositions, spanning different NMC cathode chemistries, established that hydroxide precipitation in multicomponent battery leachates follows a robust, thermodynamically ordered sequence: Al(OH)$_3$(s) $\to$ Fe(OH)$_3$(s) $\to$ Cu(OH)$_2$(s) $\to$ Co(OH)$_2$(s) $\approx$ Ni(OH)$_2$(s) $\to$ Mn(OH)$_2$(s). This hierarchy was conserved across the full compositional space, confirming that it reflects the relative solubility products of these phases within the concentration ranges characteristic of battery leachates rather than being composition-specific.
 
 Rigorous activity modeling using the Specific Ion Interaction Theory (SIT) proved essential. At ionic strengths of $\sim$2~mol~kg$^{-1}$, sulfate complexation sequestered a substantial fraction of dissolved Ni$^{2+}$, Cu$^{2+}$, and Mn$^{2+}$ as neutral ion pairs, reducing free-ion activities well below total dissolved concentrations and shifting precipitation onset to higher pH than simpler models predict. Models that equate total dissolved metal with free-ion activity systematically overestimate the thermodynamic driving force for precipitation, producing onset pH predictions that are too low.
 
@@ -841,6 +840,11 @@ These results establish a quantitative thermodynamic foundation for selective me
 \section*{Declaration of Competing Interest}
 The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
 
+\section*{Data availability}
+The thermodynamic modeling results, high-throughput experimental datasets, and ICP measurements reported in this study are available at the following repository:\\
+\url{https://github.com/vahid2364/selective-recovery-thermodynamic-modeling-battery-metals}\\
+or from the corresponding author upon reasonable request.
+
 \section*{Acknowledgments}
 The authors acknowledge the support of Natural Resources Canada (NRCan) and the contributions of all project partners.
 
@@ -854,13 +858,9 @@ The authors acknowledge the support of Natural Resources Canada (NRCan) and the 
 \textbf{J. Hattrick-Simpers:} Funding acquisition, writing (review and editing).
 
 
-\section*{Data Availability}
-The thermodynamic modeling results, high-throughput experimental datasets, and ICP measurements reported in this study are available at the following repository:\\
-\url{https://github.com/vahid2364/selective-recovery-thermodynamic-modeling-battery-metals}\\
-or from the corresponding author upon reasonable request.
+
 
 \section*{Appendix}
-
 
 \subsection{Metal Hydroxide Solubility Constants}
 
