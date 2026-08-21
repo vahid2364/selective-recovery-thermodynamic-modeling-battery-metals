@@ -26,56 +26,52 @@ def load_results(pattern, prefix):
     for file in all_files:
         sample_id = int(os.path.basename(file).split("_")[-1].split(".")[0])
         try:
-            # 🔹 Read space-delimited files with flexible spacing
+            #  Read space-delimited files with flexible spacing
             df = pd.read_csv(file, sep=r"\s+", engine="python", encoding="utf-8-sig")
 
             if df.empty:
-                print(f"⚠️ Empty file: {file}")
+                print(f"WARNING: Empty file: {file}")
                 continue
 
-            # 🔹 Normalize column names
+            #  Normalize column names
             df.columns = (
                 df.columns.str.strip()
                 .str.replace('"', '', regex=False)
                 .str.replace("'", '', regex=False)
             )
 
-            # 🔹 Fix known header merge issue (PHREEQC spacing bug)
+            #  Fix known header merge issue (PHREEQC spacing bug)
             df.columns = df.columns.str.replace(
                 "si_Co\\(OH\\)2\\(s\\)si_Ni\\(OH\\)2\\(s\\)",
                 "si_Co(OH)2(s) si_Ni(OH)2(s)",
                 regex=True,
             )
 
-            # 🔹 Verify and select rows
+            #  Verify and select rows
             if "state" in df.columns:
                 #df = df[df["state"].astype(str).str.contains("react", case=False, na=False)]
                 if df.empty:
                     df = df.tail(1)  # fallback to last row if no "react" found
             else:
-                print(f"⚠️ 'state' not found after cleanup in: {os.path.basename(file)}")
+                print(f"WARNING: 'state' not found after cleanup in: {os.path.basename(file)}")
                 df = df.tail(1)
+
+            # Drop empty columns, strip column names and string values per file
+            df = df.dropna(axis=1, how="all")
+            df.columns = df.columns.str.strip()
+            df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
 
             frames.append(df)
 
         except Exception as e:
-            print(f"❌ Error reading {file}: {e}")
+            print(f"ERROR: Error reading {file}: {e}")
             continue
 
     if not frames:
-        print(f"❗ No valid files found for {pattern}")
+        print(f"NOTE: No valid files found for {pattern}")
         return pd.DataFrame()
 
-    # Drop empty columns created by stray delimiters
-    df = df.dropna(axis=1, how="all")
-
-    # Clean column names
-    df.columns = df.columns.str.strip()
-
-    # Clean whitespace in string values
-    df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
-
-    print(f"✅ Loaded {len(frames)} files for pattern {pattern}")
+    print(f"OK: Loaded {len(frames)} files for pattern {pattern}")
     return pd.concat(frames, ignore_index=True)
 
 
@@ -158,20 +154,20 @@ merged_mix2_eq_react = lhs_df.merge(df_mix2_eq_react, on="SampleID", how="left")
 # ==============================================================
 out_path = "speciation_results_merged/DOE_merged_mix1_react.csv"
 merged_mix1_react.to_csv(out_path, index=False)
-print(f"\n✅ Merged dataset saved to {out_path}")
+print(f"\nOK: Merged dataset saved to {out_path}")
 print(f"Total merged samples: {len(merged_mix1_react)}")
 
 out_path = "speciation_results_merged/DOE_merged_mix1_i_soln.csv"
 merged_mix1_i_soln.to_csv(out_path, index=False)
-print(f"\n✅ Merged dataset saved to {out_path}")
+print(f"\nOK: Merged dataset saved to {out_path}")
 print(f"Total merged samples: {len(merged_mix1_i_soln)}")
 
 out_path = "speciation_results_merged/DOE_merged_mix2_react.csv"
 merged_mix2_react.to_csv(out_path, index=False)
-print(f"\n✅ Merged dataset saved to {out_path}")
+print(f"\nOK: Merged dataset saved to {out_path}")
 print(f"Total merged samples: {len(merged_mix2_react)}")
 
 out_path = "speciation_results_merged/DOE_merged_mix2_eq_react.csv"
 merged_mix2_eq_react.to_csv(out_path, index=False)
-print(f"\n✅ Merged dataset saved to {out_path}")
+print(f"\nOK: Merged dataset saved to {out_path}")
 print(f"Total merged samples: {len(merged_mix2_eq_react)}")

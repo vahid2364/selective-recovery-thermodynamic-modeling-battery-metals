@@ -895,7 +895,7 @@ try:
     
         
 except Exception as e:
-    print("❌ Error while defining param_ranges:")
+    print("ERROR: Error while defining param_ranges:")
     print("   →", str(e))
     raise
 
@@ -1243,6 +1243,6 @@ with open(output_file, "w") as f:
     #f.write("RUN_CELLS\n  -cells " + " ".join(str(i + 1) for i in range(n_samples)) + "\n")
 
 plt.close('all')
-print(f"✅ Generated {samples.shape} LHS-based hydrolysis + NaOH mixing simulations.")
-print(f"📂 PHREEQC file: {output_file}")
-print("📊 Parameter samples saved to: lhs_input/hydrolysis_then_NaOHmix_samples.csv")
+print(f"OK: Generated {samples.shape} LHS-based hydrolysis + NaOH mixing simulations.")
+print(f" PHREEQC file: {output_file}")
+print(" Parameter samples saved to: lhs_input/hydrolysis_then_NaOHmix_samples.csv")

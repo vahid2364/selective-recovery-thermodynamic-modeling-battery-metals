@@ -244,45 +244,45 @@ def load_results(pattern, prefix):
         sample_id = len(frames) + 1
 
         try:
-            # 🔹 Read space-delimited files with flexible spacing
+            #  Read space-delimited files with flexible spacing
             df = pd.read_csv(file, sep=r"\s+", engine="python", encoding="utf-8-sig")
             df["SampleID"] = sample_id
 
             if df.empty:
-                print(f"⚠️ Empty file: {file}")
+                print(f"WARNING: Empty file: {file}")
                 continue
 
-            # 🔹 Normalize column names
+            #  Normalize column names
             df.columns = (
                 df.columns.str.strip()
                 .str.replace('"', '', regex=False)
                 .str.replace("'", '', regex=False)
             )
 
-            # 🔹 Fix known header merge issue (PHREEQC spacing bug)
+            #  Fix known header merge issue (PHREEQC spacing bug)
             df.columns = df.columns.str.replace(
                 "si_Co\\(OH\\)2\\(s\\)si_Ni\\(OH\\)2\\(s\\)",
                 "si_Co(OH)2(s) si_Ni(OH)2(s)",
                 regex=True,
             )
 
-            # 🔹 Verify and select rows
+            #  Verify and select rows
             if "state" in df.columns:
                 #df = df[df["state"].astype(str).str.contains("react", case=False, na=False)]
                 if df.empty:
                     df = df.tail(1)  # fallback to last row if no "react" found
             else:
-                print(f"⚠️ 'state' not found after cleanup in: {os.path.basename(file)}")
+                print(f"WARNING: 'state' not found after cleanup in: {os.path.basename(file)}")
                 df = df.tail(1)
 
             frames.append(df)
 
         except Exception as e:
-            print(f"❌ Error reading {file}: {e}")
+            print(f"ERROR: Error reading {file}: {e}")
             continue
 
     if not frames:
-        print(f"❗ No valid files found for {pattern}")
+        print(f"NOTE: No valid files found for {pattern}")
         return pd.DataFrame()
 
     # Drop empty columns created by stray delimiters
@@ -294,7 +294,7 @@ def load_results(pattern, prefix):
     # Clean whitespace in string values
     df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
 
-    print(f"✅ Loaded {len(frames)} files for pattern {pattern}")
+    print(f"OK: Loaded {len(frames)} files for pattern {pattern}")
     return pd.concat(frames, ignore_index=True)
 
 # ==============================================================
@@ -383,7 +383,7 @@ for i, fl in enumerate(fls):
     fname = out_dir #os.path.join(out_dir, "DOE_merged_mix2_eq_react.csv")
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -475,7 +475,7 @@ for i, fl in enumerate(fls[1:]):
     fname = os.path.join(fl)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -501,7 +501,7 @@ for i, fl in enumerate(fls[1:]):
 
     for col, color in zip(["Gibbsite", "Fe(OH)3(s)", "Cu(OH)2(s)"], ["red","blue","orange"]):
         if col not in df.columns:
-            print(f"⚠️ Missing expected column '{col}' in {fname}")
+            print(f"WARNING: Missing expected column '{col}' in {fname}")
             df[col] = 0.0  # add dummy column to avoid errors
 
         x = df[NaOH_mole].values
@@ -603,7 +603,7 @@ for i, fl in enumerate(fls[1:]):
     fname = os.path.join(fl)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -629,7 +629,7 @@ for i, fl in enumerate(fls[1:]):
 
     for col, color in zip(["Ni(OH)2(s)", "Mn(OH)2(s)", "Co(OH)2(s)"], ["red","blue","orange"]):
         if col not in df.columns:
-            print(f"⚠️ Missing expected column '{col}' in {fname}")
+            print(f"WARNING: Missing expected column '{col}' in {fname}")
             df[col] = 0.0  # add dummy column to avoid errors
 
         x = df[NaOH_mole].values
@@ -727,7 +727,7 @@ for i, fl in enumerate(fls[1:]):
     fname = os.path.join(fl)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -753,7 +753,7 @@ for i, fl in enumerate(fls[1:]):
 
     for col, color in zip(["Al", "Fe", "Cu"], ["red","blue","orange"]):
         if col not in df.columns:
-            print(f"⚠️ Missing expected column '{col}' in {fname}")
+            print(f"WARNING: Missing expected column '{col}' in {fname}")
             df[col] = 0.0  # add dummy column to avoid errors
 
         x = df[NaOH_mole].values
@@ -853,7 +853,7 @@ for i, fl in enumerate(fls[1:]):
     fname = os.path.join(fl)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -879,7 +879,7 @@ for i, fl in enumerate(fls[1:]):
 
     for col, color in zip(["Ni", "Mn", "Co"], ["red","blue","orange"]):
         if col not in df.columns:
-            print(f"⚠️ Missing expected column '{col}' in {fname}")
+            print(f"WARNING: Missing expected column '{col}' in {fname}")
             df[col] = 0.0  # add dummy column to avoid errors
 
         x = df[NaOH_mole].values
@@ -980,7 +980,7 @@ for i, fl in enumerate(fls[1:]):
     fname2= "speciation_results_merged/DOE_merged_mix2_react.csv"
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -988,7 +988,7 @@ for i, fl in enumerate(fls[1:]):
 
     for col, color in zip(["Ni", "Co", "Mn"], ["red","blue","orange"]):
         if col not in df.columns:
-            print(f"⚠️ Missing expected column '{col}' in {fname}")
+            print(f"WARNING: Missing expected column '{col}' in {fname}")
             df[col] = 0.0  # add dummy column to avoid errors
 
         # raw markers on top
@@ -1058,7 +1058,7 @@ for i, fl in enumerate(fls[1:]):
     fname2= "speciation_results_merged/DOE_merged_mix2_react.csv"
 
     if not os.path.exists(fname1):
-        print(f"⚠️ Missing file: {fname1}")
+        print(f"WARNING: Missing file: {fname1}")
         continue
 
     df = pd.read_csv(fname1)
@@ -1066,7 +1066,7 @@ for i, fl in enumerate(fls[1:]):
 
     for col, color in zip(["Al", "Fe", "Cu", "Co", "Ni", "Mn"], ["red","blue","orange", "green", "purple", "black"]):
         if col not in df.columns:
-            print(f"⚠️ Missing expected column '{col}' in {fname1}")
+            print(f"WARNING: Missing expected column '{col}' in {fname1}")
             df[col] = 0.0  # add dummy column to avoid errors
 
         plt.figure(figsize=(7, 5))
@@ -1175,7 +1175,7 @@ chem_all = set()
 for fl in fls[1:]:
 
     if not os.path.exists(fl):
-        print(f"⚠️ Missing file: {fl}")
+        print(f"WARNING: Missing file: {fl}")
         continue
 
     df = pd.read_csv(fl)
@@ -1215,7 +1215,7 @@ for fl in fls[1:]:
                 markeredgewidth=1.1 if is_sdl else 0,
                 alpha=1.0 if is_sdl else 0.6,
                 zorder=5 if is_sdl else 1,
-                label=None   # ✅ avoid duplicate legend entries
+                label=None   # OK: avoid duplicate legend entries
             )
     
     plt.ylim([-5, 125])        
@@ -1312,7 +1312,7 @@ for i, fl in enumerate(fls[1:]):
     fname2= "speciation_results_merged/DOE_merged_mix1_react.csv"
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df1 = pd.read_csv(fname1)
@@ -1320,11 +1320,11 @@ for i, fl in enumerate(fls[1:]):
 
     for col1, col2, color in zip(["Al_sulfate_mol", "Fe_sulfate_mol", "Cu_sulfate_mol","Co_sulfate_mol", "Ni_sulfate_mol", "Mn_sulfate_mol"], ["Al", "Fe", "Cu", "Co", "Ni", "Mn"], ["red", "blue", "orange", "green", "purple", "black"]):
         if col1 not in df1.columns:
-            print(f"⚠️ Missing expected column '{col1}' in {fname1}")
+            print(f"WARNING: Missing expected column '{col1}' in {fname1}")
             df1[col1] = 0.0  # add dummy column to avoid errors
 
         if col2 not in df2.columns:
-            print(f"⚠️ Missing expected column '{col2}' in {fname2}")
+            print(f"WARNING: Missing expected column '{col2}' in {fname2}")
             df2[col2] = 0.0  # add dummy column to avoid errors
 
         plt.figure(figsize=(7, 5))
@@ -1432,11 +1432,11 @@ for (col1, col2), color in zip(metal_map.items(), colors):
 
     # ensure columns exist
     if col1 not in df1.columns:
-        print(f"⚠️ Missing {col1} in df1 → filling zeros")
+        print(f"WARNING: Missing {col1} in df1 → filling zeros")
         df1[col1] = 0.0
 
     if col2 not in df2.columns:
-        print(f"⚠️ Missing {col2} in df2 → filling zeros")
+        print(f"WARNING: Missing {col2} in df2 → filling zeros")
         df2[col2] = 0.0
 
     # dynamic legend trackers
@@ -1450,7 +1450,7 @@ for (col1, col2), color in zip(metal_map.items(), colors):
     # -------------------------
     for chem_type, subdf2 in df2.groupby("chem"):
 
-        # align df1 with df2 indices  ✅ CRITICAL FIX
+        # align df1 with df2 indices  OK: CRITICAL FIX
         subdf1 = df1.loc[subdf2.index]
 
         is_sdl = "SDL" in str(chem_type)
@@ -1583,11 +1583,11 @@ for (col1, (col2, stoich)), color in zip(metal_map.items(), colors):
 
     # ensure columns exist
     if col1 not in df1.columns:
-        print(f"⚠️ Missing {col1} in df1 → filling zeros")
+        print(f"WARNING: Missing {col1} in df1 → filling zeros")
         df1[col1] = 0.0
 
     if col2 not in df2.columns:
-        print(f"⚠️ Missing {col2} in df2 → filling zeros")
+        print(f"WARNING: Missing {col2} in df2 → filling zeros")
         df2[col2] = 0.0
 
     # -------------------------
@@ -1712,7 +1712,7 @@ for i, fl in enumerate(fls):
     #print(fname)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -1797,7 +1797,7 @@ for i, fl in enumerate(fls):
     #print(fname)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -1861,7 +1861,7 @@ for i, fl in enumerate(fls):
     #print(fname)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -1925,7 +1925,7 @@ for i, fl in enumerate(fls):
     #print(fname)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -1987,7 +1987,7 @@ for i, fl in enumerate(fls):
     #print(fname)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -2053,7 +2053,7 @@ for i, fl in enumerate(fls):
     #print(fname)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -2110,14 +2110,14 @@ for i, fl in enumerate(fls):
     sheet_names = ["CC-NRCan3-046 HTE 40%"]
     for name in sheet_names:
         if name not in ExpData_dict:
-            print(f"⚠️ Sheet '{name}' not found.")
+            print(f"WARNING: Sheet '{name}' not found.")
             continue
 
         exp_df = ExpData_dict[name].dropna(axis=1, how="all").copy()
         exp_df.columns = exp_df.columns.astype(str).str.strip()
 
         if "NaOH Equivalents" not in exp_df or "Vol of NaOH (mL)" not in exp_df:
-            print(f"❌ Required columns missing in '{name}'.")
+            print(f"ERROR: Required columns missing in '{name}'.")
             continue
 
         y_cols = [
@@ -2170,7 +2170,7 @@ for i, fl in enumerate(fls):
     #print(fname)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)
@@ -2236,7 +2236,7 @@ for i, fl in enumerate(fls):
     #print(fname)
 
     if not os.path.exists(fname):
-        print(f"⚠️ Missing file: {fname}")
+        print(f"WARNING: Missing file: {fname}")
         continue
 
     df = pd.read_csv(fname)

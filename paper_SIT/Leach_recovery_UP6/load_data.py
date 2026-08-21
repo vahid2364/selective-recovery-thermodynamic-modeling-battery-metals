@@ -80,15 +80,15 @@ def read_multisheet_excel(file_path):
                         df[col] = pd.to_numeric(df[col], errors="coerce")
 
                 all_data[sheet] = df
-                print(f"✅ Loaded '{sheet}' → {df.shape[0]} rows, {df.shape[1]} cols")
+                print(f"OK: Loaded '{sheet}' → {df.shape[0]} rows, {df.shape[1]} cols")
 
             except Exception as e:
-                print(f"❌ Error reading sheet '{sheet}': {e}")
+                print(f"ERROR: Error reading sheet '{sheet}': {e}")
 
     except FileNotFoundError:
         print(f"🚫 File not found: {file_path}")
     except Exception as e:
-        print(f"⚠️ Unexpected error while opening file: {e}")
+        print(f"WARNING: Unexpected error while opening file: {e}")
 
     return all_data
 
@@ -167,10 +167,10 @@ def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
 
                     # ---- Save each data table
                     df_data.to_csv(f"{save_dir}/{sheet}_data.csv", index=False)
-                    print(f"✅ Saved data table for '{sheet}'")
+                    print(f"OK: Saved data table for '{sheet}'")
 
             except Exception as e:
-                print(f"❌ Error reading sheet '{sheet}': {e}")
+                print(f"ERROR: Error reading sheet '{sheet}': {e}")
 
         # ---- 3️⃣ Save all metadata
         if metadata_records:
@@ -181,7 +181,7 @@ def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
     except FileNotFoundError:
         print(f"🚫 File not found: {file_path}")
     except Exception as e:
-        print(f"⚠️ Unexpected error: {e}")
+        print(f"WARNING: Unexpected error: {e}")
 
     return all_data, meta_df
 
@@ -249,7 +249,7 @@ def clean_metadata_table(meta_df, save_path="cleaned_metadata.csv"):
 
     # --- Save cleaned file ---
     df.to_csv(save_path, index=False)
-    print(f"✅ Cleaned metadata saved to: {save_path}")
+    print(f"OK: Cleaned metadata saved to: {save_path}")
 
     return df
 
@@ -277,14 +277,14 @@ def plot_sheets(
 
     for name in sheet_names:
         if name not in data_dict:
-            print(f"⚠️ Sheet '{name}' not found.")
+            print(f"WARNING: Sheet '{name}' not found.")
             continue
 
         df = data_dict[name].dropna(axis=1, how="all").copy()
         df.columns = df.columns.astype(str).str.strip()
 
         if x_col not in df or "Vol of NaOH (mL)" not in df:
-            print(f"❌ Required columns missing in '{name}'.")
+            print(f"ERROR: Required columns missing in '{name}'.")
             continue
 
         y_cols = (
@@ -293,7 +293,7 @@ def plot_sheets(
         )
 
         if not y_cols:
-            print(f"⚠️ No numeric columns to plot in '{name}'.")
+            print(f"WARNING: No numeric columns to plot in '{name}'.")
             continue
 
         # Optional unit conversion
@@ -439,7 +439,7 @@ def plot_process_map_matrix(data_dict, sheet_pattern="46"):
 
     df_all = pd.DataFrame(records)
     if df_all.empty:
-        print("⚠️ No valid numeric data found for plotting.")
+        print("WARNING: No valid numeric data found for plotting.")
         return
 
     # ---- Determine unique elements ----
@@ -546,7 +546,7 @@ def plot_custom_process_maps(
 
     df_all = pd.DataFrame(records)
     if df_all.empty:
-        print("⚠️ No valid numeric data found for plotting.")
+        print("WARNING: No valid numeric data found for plotting.")
         return
 
     fig = plt.figure(figsize=(13, 10))
