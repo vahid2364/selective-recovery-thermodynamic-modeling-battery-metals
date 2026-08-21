@@ -31,7 +31,7 @@ Key findings:
 - The Co/Ni separation window (ΔpH ≈ 0.3) establishes a **practical thermodynamic limit** — pH adjustment alone cannot reliably fractionate these metals across the investigated compositional space.
 - The Cu→Co gap (ΔpH ≈ 2.2) is a robust, exploitable window for impurity removal.
 
-![Speciation and solid-phase partitioning along NaOH titration](Figs/figC_speciation_with_solid_eq.png)
+![Speciation and solid-phase partitioning along NaOH titration](results/Leach_recovery_UP6/figC_speciation_with_solid_eq.png)
 
 ---
 
