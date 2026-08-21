@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on %(date)s
+Created: 2025
 
 Project   : Battery Recycling - Hydrometallurgical Process
 
@@ -12,7 +12,8 @@ Description:
     while keeping all other sections unchanged.
 
 License:
-    This script is released under ....    
+    Creative Commons Attribution 4.0 International (CC BY 4.0)
+    https://creativecommons.org/licenses/by/4.0/    
 """
 
 import os

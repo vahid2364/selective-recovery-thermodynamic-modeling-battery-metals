@@ -245,7 +245,7 @@ def load_results(pattern, prefix):
 
         try:
             # 🔹 Read space-delimited files with flexible spacing
-            df = pd.read_csv(file, delim_whitespace=True, engine="python", encoding="utf-8-sig")
+            df = pd.read_csv(file, sep=r"\s+", engine="python", encoding="utf-8-sig")
             df["SampleID"] = sample_id
 
             if df.empty:

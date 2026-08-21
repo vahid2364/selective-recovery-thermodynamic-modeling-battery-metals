@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on %(date)s
+Created: 2025
 Project   : Battery Recycling - Hydrometallurgical Process
 Author    : Vahid Attari
 Email     : vahid.attari@nrcan-rncan.gc.ca

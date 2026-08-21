@@ -14,7 +14,7 @@ print("Loading LHS input...")
 lhs_df = pd.read_csv(lhs_path)
 lhs_df["SampleID"] = lhs_df.index + 1  # ensure consistent IDs
 print(lhs_df.head())
-print("Loadded LHS input...")
+print("Loaded LHS input...")
 
 # ==============================================================
 # Function to robustly load simulation result CSVs
@@ -27,7 +27,7 @@ def load_results(pattern, prefix):
         sample_id = int(os.path.basename(file).split("_")[-1].split(".")[0])
         try:
             # 🔹 Read space-delimited files with flexible spacing
-            df = pd.read_csv(file, delim_whitespace=True, engine="python", encoding="utf-8-sig")
+            df = pd.read_csv(file, sep=r"\s+", engine="python", encoding="utf-8-sig")
 
             if df.empty:
                 print(f"⚠️ Empty file: {file}")
