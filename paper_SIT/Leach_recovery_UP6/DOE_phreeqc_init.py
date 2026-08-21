@@ -15,12 +15,13 @@ Description:
 """
 
 import os
+import itertools
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pyDOE2 import lhs
-import matplotlib.pyplot as plt
-import itertools
 import seaborn as sns
+from pyDOE2 import lhs
 
 # ===============================================================
 os.makedirs('speciation_results', exist_ok=True)
@@ -96,15 +97,6 @@ eq = equivalents_added(0.294/1000, NaOH_conc)  # 0.294 mL NaOH
 print("Equivalents added:", eq)
 
 
-# %%
-
-## moles in a small aliquot
-#def mgL_to_moles(mgL, MW):
-#    mg = mgL * 0.001         # mg in 1 mL vial
-#    mmol = mg / MW           # mmol
-#    return mmol / 1000       # convert to mol
-
-## mol/L 
 def mgL_to_moles(mgL, MW):
     mg = mgL                        # mg per liter
     g = mg / 1000                   # convert mg → g
@@ -135,10 +127,6 @@ print("------------------------------------------------------")
 # --- 2. Define ±20% sampling window ---
 #def pm20(x):    # plus/minus 20%
 #    return (0.5 * x, 1.5 * x)
-
-import numpy as np
-import pandas as pd
-import itertools
 
 def metal_to_sulfate_equivalent(exp_mgL, fe_state="Fe3+"):
     """
@@ -324,10 +312,6 @@ def biased_grid_sampling(param_ranges, n_per_dim, power=2.0):
         samples_matrix : numpy array of varying-parameter samples
     """
 
-    import numpy as np
-    import pandas as pd
-    import itertools
-
     keys = list(param_ranges.keys())
 
     variable_params = []
@@ -374,9 +358,6 @@ def biased_grid_sampling(param_ranges, n_per_dim, power=2.0):
 ######
 ########  Battery composition sampling
 ###### Battery composition sampling (black mass consistent)
-
-import numpy as np
-import pandas as pd
 
 battery_classes = {
     "NMC111": {"Ni": 1, "Mn": 1, "Co": 1},
@@ -557,347 +538,229 @@ def convert_composition_to_moles(salt_data, volume_L=1.0):
 
     return {"salt_moles": salt_moles, "ion_moles": ion_moles}
 
-try: 
+print("------------------------------------------------------")
+salt_data = [
+    {"name": "Al2(SO4)3", "g_per_L": 9.8,  "MW": 342.15, "stoich": {"Al": 2, "SO4": 3}},
+    {"name": "FeSO4·7H2O", "g_per_L": 3.9,  "MW": 278.01, "stoich": {"Fe": 1, "SO4": 1}},
+    {"name": "CoSO4·7H2O", "g_per_L": 55.8, "MW": 281.10, "stoich": {"Co": 1, "SO4": 1}},
+    {"name": "CuSO4", "g_per_L": 9.2, "MW": 159.61, "stoich": {"Cu": 1, "SO4": 1}},
+    {"name": "Li2SO4·H2O", "g_per_L": 12.9, "MW": 127.96, "stoich": {"Li": 2, "SO4": 1}},
+    {"name": "MnSO4·H2O", "g_per_L": 29.4,  "MW": 169.02, "stoich": {"Mn": 1, "SO4": 1}},
+    {"name": "NiSO4·6H2O", "g_per_L": 102.4,"MW": 262.84, "stoich": {"Ni": 1, "SO4": 1}},
+]
 
-    print("------------------------------------------------------") 
-    # salt_data = [
-    #     {"name": "Al2(SO4)3·18H2O", "g_per_L": 14.0,  "MW": 666.42, "stoich": {"Al": 2, "SO4": 3}},
-    #     {"name": "FeSO4·7H2O", "g_per_L": 5.6,  "MW": 278.01, "stoich": {"Fe": 1, "SO4": 1}},
-    #     {"name": "CoSO4·7H2O", "g_per_L": 79.7, "MW": 281.10, "stoich": {"Co": 1, "SO4": 1}},
-    #     {"name": "CuSO4·5H2O", "g_per_L": 13.2, "MW": 249.69, "stoich": {"Cu": 1, "SO4": 1}},
-    #     {"name": "Li2SO4·H2O", "g_per_L": 18.5, "MW": 127.96, "stoich": {"Li": 2, "SO4": 1}},
-    #     {"name": "MnSO4·H2O", "g_per_L": 41.9,  "MW": 169.02, "stoich": {"Mn": 1, "SO4": 1}},
-    #     {"name": "NiSO4·6H2O", "g_per_L": 146.3,"MW": 262.84, "stoich": {"Ni": 1, "SO4": 1}},
-    # ]
+# --- call function ---
+result = convert_composition_to_moles(salt_data, volume_L=1)  # 1 L or 100 mL system
 
-    salt_data = [
-        {"name": "Al2(SO4)3", "g_per_L": 9.8,  "MW": 342.15, "stoich": {"Al": 2, "SO4": 3}},
-        {"name": "FeSO4·7H2O", "g_per_L": 3.9,  "MW": 278.01, "stoich": {"Fe": 1, "SO4": 1}},
-        {"name": "CoSO4·7H2O", "g_per_L": 55.8, "MW": 281.10, "stoich": {"Co": 1, "SO4": 1}},
-        {"name": "CuSO4", "g_per_L": 9.2, "MW": 159.61, "stoich": {"Cu": 1, "SO4": 1}},
-        {"name": "Li2SO4·H2O", "g_per_L": 12.9, "MW": 127.96, "stoich": {"Li": 2, "SO4": 1}},
-        {"name": "MnSO4·H2O", "g_per_L": 29.4,  "MW": 169.02, "stoich": {"Mn": 1, "SO4": 1}},
-        {"name": "NiSO4·6H2O", "g_per_L": 102.4,"MW": 262.84, "stoich": {"Ni": 1, "SO4": 1}},
-    ]
+# --- access outputs ---
+salt_moles = result["salt_moles"]
+ion_moles  = result["ion_moles"]
 
-    # --- call function ---
-    result = convert_composition_to_moles(salt_data, volume_L=1)  # 1 L or 100 mL system
+# --- print nicely ---
+print("Salt moles:")
+for k, v in salt_moles.items():
+    print(f"{k}: {v:.4f} mol")
 
-    # --- access outputs ---
-    salt_moles = result["salt_moles"]
-    ion_moles  = result["ion_moles"]
+print("\nIon moles:")
+for k, v in ion_moles.items():
+    print(f"{k}: {v:.4f} mol")
 
-    # --- print nicely ---
-    print("Salt moles:")
-    for k, v in salt_moles.items():
-        print(f"{k}: {v:.4f} mol")
 
-    print("\nIon moles:")
-    for k, v in ion_moles.items():
-        print(f"{k}: {v:.4f} mol")
+print("------------------------------------------------------") 
+sulfates = metal_to_sulfate_equivalent(exp_mgL, fe_state="Fe3+")
+print("Sulfate equivalent mg/L:") 
+print(sulfates) 
+print("------------------------------------------------------") 
 
-    #pause
+total_metal_moles = salt_moles
 
-    print("------------------------------------------------------") 
-    sulfates = metal_to_sulfate_equivalent(exp_mgL, fe_state="Fe3+")
-    print("Sulfate equivalent mg/L:") 
-    print(sulfates) 
-    print("------------------------------------------------------") 
+# ===============================================================
 
-    total_metal_moles = total_metal_moles_from_icp(exp_mgL, volume_mL=1*0.3)  # 1 mL vial
-    print("Total metal from ICP (mole):") 
-    print(total_metal_moles) 
-    #print(total_metal_moles['Al'])
 
-    total_sulfate_moles = total_metal_moles_from_icp(sulfates, volume_mL=1*0.3)  # 1 mL vial
-    print("Total sulfates from ICP (mole):") 
-    print(total_sulfate_moles) 
-    print("------------------------------------------------------") 
-    ####
-    ####
-    total_metal_moles = salt_moles
-    ####
-    ####
-    # ===============================================================
+param_ranges = {
+    "temp": (25, 25),           # °C
+    ##
+    "NaOH_stock": (1, 1),   # M NaOH
+    #"NaOH_mole": (0.05, 1.0), # NaOH mole - 0.5 L of 1 M NaOH = 0.5 mol
+    "NaOH_mole": (0.02, 1.5), # NaOH mole - 0.5 L of 2.5 M NaOH = 1.25 mol
+    ##
+    "BattLeachate_volume": (1, 1),   # leachate fraction (0.1–1.0)
+    ##
+    #"V_batt_pct": (5, 40),     # % leachate volume at vial
+}
 
-    
-    param_ranges = {
-        "temp": (25, 25),           # °C
-        ##
-        "NaOH_stock": (1, 1),   # M NaOH
-        #"NaOH_mole": (0.05, 1.0), # NaOH mole - 0.5 L of 1 M NaOH = 0.5 mol
-        "NaOH_mole": (0.02, 1.5), # NaOH mole - 0.5 L of 2.5 M NaOH = 1.25 mol
-        ##
-        "BattLeachate_volume": (1, 1),   # leachate fraction (0.1–1.0)
-        ##
-        #"V_batt_pct": (5, 40),     # % leachate volume at vial
-    }
+od = 0.9
+comp_ranges = {
+    "Al_sulfate_mol": log_span(total_metal_moles['Al2(SO4)3'], orders=od),
+    "Fe_sulfate_mol": log_span(total_metal_moles['FeSO4·7H2O'], orders=od),
+    "Cu_sulfate_mol": log_span(total_metal_moles['CuSO4'], orders=od), 
+    "Co_sulfate_mol": log_span(total_metal_moles['CoSO4·7H2O'], orders=od), 
+    "Ni_sulfate_mol": log_span(total_metal_moles['NiSO4·6H2O'], orders=od),
+    "Mn_sulfate_mol": log_span(total_metal_moles['MnSO4·H2O'], orders=od), 
+}
 
-    od = 0.9
-    comp_ranges = {
-        # metal sulfate molar amounts (±20% around experiment)
-        # "Al_sulfate_mol": log_span(total_metal_moles['Al'], orders=1), #log_span(Al_mol),
-        # "Fe_sulfate_mol": log_span(total_metal_moles['Fe'], orders=1), #log_span(Fe_mol),
-        # "Cu_sulfate_mol": log_span(total_metal_moles['Cu'], orders=1), #log_span(Cu_mol),
-        # "Co_sulfate_mol": log_span(total_metal_moles['Co'], orders=1), #log_span(Co_mol),
-        # "Ni_sulfate_mol": log_span(total_metal_moles['Ni'], orders=1), #log_span(Ni_mol),
-        # "Mn_sulfate_mol": log_span(total_metal_moles['Mn'], orders=1), #log_span(Mn_mol),
-        #
-        "Al_sulfate_mol": log_span(total_metal_moles['Al2(SO4)3'], orders=od), 
-        "Fe_sulfate_mol": log_span(total_metal_moles['FeSO4·7H2O'], orders=od),
-        "Cu_sulfate_mol": log_span(total_metal_moles['CuSO4'], orders=od), 
-        "Co_sulfate_mol": log_span(total_metal_moles['CoSO4·7H2O'], orders=od), 
-        "Ni_sulfate_mol": log_span(total_metal_moles['NiSO4·6H2O'], orders=od),
-        "Mn_sulfate_mol": log_span(total_metal_moles['MnSO4·H2O'], orders=od), 
-    }
+print("param_ranges")
+print(param_ranges)
+print("comp_ranges")
+print(comp_ranges)
 
-    print("param_ranges")
-    print(param_ranges)
-    print("comp_ranges")
-    print(comp_ranges)
+# ===============================================================
+# Battery Type SAMPLING
+# ===============================================================
 
-    # ===============================================================
-    # Battery Type SAMPLING
-    # ===============================================================
+# 1. Generate NaOH and other series once
+df_other = lhs_sampling(param_ranges, n_samples, log_params=["NaOH_mole"])
+print(df_other)
 
-    # 1. Generate NaOH and other series once
-    df_other = lhs_sampling(param_ranges, n_samples, log_params=["NaOH_mole"])
-    print(df_other)
+# 2. Generate sulfate samples -- Battery Type SAMPLING
+df_sulfates = sample_battery_df(comp_ranges, N=n_samples)
+print(df_sulfates)
 
-    # NaOH_df, _ = uniform_grid_sampling(
-    #     {"NaOH_mole": param_ranges["NaOH_mole"]},
-    #     n_per_dim=t_samples,
-    #     log_params=["NaOH_mole"]
-    # )
-    # NaOH_values = NaOH_df["NaOH_mole"].values
-    # print(NaOH_values)
-
-    # 2. Generate sulfate samples once
-    # sulfate_ranges = {k: v for k, v in param_ranges.items() if "sulfate" in k}
-    # df_sulfates = lhs_sampling(
-    #     sulfate_ranges,
-    #     n_samples=n_samples,
-    #     log_params=list(sulfate_ranges.keys())
-    # )
-    # print(df_sulfates)
-
-    # 2. Generate sulfate samples once -- Battery Type SAMPLING
-    df_sulfates = sample_battery_df(comp_ranges, N=n_samples)
-    print(df_sulfates)
-
-    df_final = pd.concat([df_sulfates, df_other], axis=1)
-    samples = df_final.copy()
+df_final = pd.concat([df_sulfates, df_other], axis=1)
+samples = df_final.copy()
 
 
 
 
-    # ===============================================================
-    # ADDING SDL composition as a fixed point
-    # ===============================================================
+# ===============================================================
+# ADDING SDL composition as a fixed point
+# ===============================================================
 
 
-    values_star = [
-        {"Al_sulfate_mol": 0.041},
-        {"Co_sulfate_mol": 0.284},
-        {"Cu_sulfate_mol": 0.083},
-        {"Fe_sulfate_mol": 0.020},
-        #{"Li_sulfate_mol": 0.145},
-        {"Mn_sulfate_mol": 0.248},
-        {"Ni_sulfate_mol": 0.557},
-        {"Ni_sulfate_mol": 0.557},
-        {"chem": "NMC523 - SDL"},
-        {"temp": 25,},
-        {"NaOH_mole": 0.75}, 
-        {"BattLeachate_volume": 1}, 
-        {"NaOH_stock": 1}
-    ]
+values_star = [
+    {"Al_sulfate_mol": 0.041},
+    {"Co_sulfate_mol": 0.284},
+    {"Cu_sulfate_mol": 0.083},
+    {"Fe_sulfate_mol": 0.020},
+    {"Mn_sulfate_mol": 0.248},
+    {"Ni_sulfate_mol": 0.557},
+    {"chem": "NMC523 - SDL"},
+    {"temp": 25},
+    {"NaOH_mole": 0.75},
+    {"BattLeachate_volume": 1},
+    {"NaOH_stock": 1},
+]
 
-    # flatten list of dicts → one dict
-    row = {}
-    for d in values_star:
-        row.update(d)
+# flatten list of dicts → one dict
+row = {}
+for d in values_star:
+    row.update(d)
 
-    df_new = pd.DataFrame([row])
+df_new = pd.DataFrame([row])
 
-    # merge (append as new row)
-    df_final = pd.concat([df_final, df_new], ignore_index=True)
-    print(df_final)
+# merge (append as new row)
+df_final = pd.concat([df_final, df_new], ignore_index=True)
+print(df_final)
 
-    samples = df_final.copy()
+samples = df_final.copy()
 
-    # ===============================================================
-    # UNIFORM SAMPLING
-    # ===============================================================
-
-    #keys = list(param_ranges.keys())
-    #df_grid, none = uniform_grid_sampling(param_ranges, 
-    #                                      n_per_dim=n_per_dim, 
-    #                                      log_params=["Al_sulfate_mol","Fe_sulfate_mol"]
-    #                                      )
-    
-    #df_grid, none = biased_grid_sampling(
-    #    param_ranges=param_ranges,
-    #    n_per_dim=n_per_dim,
-    #    power=2.0
-    #)
-    
-    #samples = df_grid.copy()
-    #print(samples)
-
-    # ===============================================================
-    # LHS SAMPLING
-    # ===============================================================
-    
-    # # keys → list of parameter names
-    # # Latin Hypercube sampling matrix
-    # keys = list(param_ranges.keys())
-    # lhs_matrix = lhs(len(keys), samples=n_samples)
-
-    # scaled = {}
-    # for i, k in enumerate(keys):
-
-    #     low, high = param_ranges[k]
-
-    #     # --------------------------------------------------------
-    #     # 1️⃣ Log-sampling for sulfate mol parameters
-    #     #    Detect sulfate species by "_mol" suffix
-    #     # --------------------------------------------------------
-    #     if k.endswith("_mol"):  
-    #         # low and high are already 10**(logx ± orders)
-    #         # so sample directly in log10-space
-    #         log_low = np.log10(low)
-    #         log_high = np.log10(high)
-
-    #         # LHS → log-space
-    #         scaled_vals = 10 ** (log_low + lhs_matrix[:, i] * (log_high - log_low))
-    #         scaled[k] = scaled_vals
-
-    #     # --------------------------------------------------------
-    #     # 2️⃣ Linear sampling for all other parameters
-    #     # --------------------------------------------------------
-    #     else:
-    #         scaled_vals = low + lhs_matrix[:, i] * (high - low)
-    #         scaled[k] = scaled_vals
-
-    # # Convert to DataFrame
-    # samples = pd.DataFrame(scaled)
-
-    # Save
-    os.makedirs("lhs_input", exist_ok=True)
-    samples.to_csv(
-        "lhs_input/hydrolysis_then_NaOHmix_samples.csv",
-        index=False,
-        float_format="%.4g",
-    )
+# Save
+os.makedirs("lhs_input", exist_ok=True)
+samples.to_csv(
+    "lhs_input/hydrolysis_then_NaOHmix_samples.csv",
+    index=False,
+    float_format="%.4g",
+)
 
 
-    # Loop through each parameter
-    for col in samples.select_dtypes(include="number").columns:
-        if is_constant(samples[col]):
-            print(f"Skipping KDE for '{col}' (constant column)")
-            continue
+# Loop through each parameter
+for col in samples.select_dtypes(include="number").columns:
+    if is_constant(samples[col]):
+        print(f"Skipping KDE for '{col}' (constant column)")
+        continue
 
-        data = samples[col].dropna()
-        data = data[data > 0]
-        if (data <= 0).any():
-            print(f"Skipping '{col}' (non-positive values for log scale)")
-            continue
+    data = samples[col].dropna()
+    data = data[data > 0]
+    if (data <= 0).any():
+        print(f"Skipping '{col}' (non-positive values for log scale)")
+        continue
 
-        plt.figure()
+    plt.figure()
 
-        bins = np.logspace(np.log10(data.min()), np.log10(data.max()), 50)
-        plt.hist(data, bins=bins, alpha=0.6, color='blue', edgecolor='black')
-        print("col:", col)
+    bins = np.logspace(np.log10(data.min()), np.log10(data.max()), 50)
+    plt.hist(data, bins=bins, alpha=0.6, color='blue', edgecolor='black')
+    print("col:", col)
 
-        # --- overlay only relevant salts ---
-        for salt in salt_data:
-            if col[:2] in salt["stoich"]:
-                mol_per_L = salt["g_per_L"] / salt["MW"]
+    # --- overlay only relevant salts ---
+    for salt in salt_data:
+        if col[:2] in salt["stoich"]:
+            mol_per_L = salt["g_per_L"] / salt["MW"]
 
-                # scale by stoichiometric coefficient
-                value = mol_per_L * salt["stoich"][col[:2]]
+            # scale by stoichiometric coefficient
+            value = mol_per_L * salt["stoich"][col[:2]]
 
-                plt.axvline(value, linestyle='--', linewidth=1)
+            plt.axvline(value, linestyle='--', linewidth=1)
 
-                plt.text(value, plt.ylim()[1]*0.72, salt["name"],
-                        rotation=90, va='bottom', ha='right', fontsize=12)
-                plt.xlabel(salt["name"], fontsize=17)
+            plt.text(value, plt.ylim()[1]*0.72, salt["name"],
+                    rotation=90, va='bottom', ha='right', fontsize=12)
+            plt.xlabel(salt["name"], fontsize=17)
 
-        plt.xscale("log")
-        #plt.xlabel(col, fontsize=14)
-        plt.ylabel("Count", fontsize=17)
-        plt.xticks(fontsize=15)
-        plt.yticks(fontsize=15)
-        plt.tight_layout()
-        plt.savefig(f"lhs_input/hist_{col}.png")
-        plt.close()
-
-
-    import itertools
-
-    plt.figure(figsize=(7, 5))
-
-    # --- define styles ONCE ---
-    colors = [
-        "#000000",  # black
-        "#0072B2",  # blue
-        "#D55E00",  # vermillion
-        "#009E73",  # bluish green
-        "#CC79A7",  # reddish purple
-        "#E69F00",  # orange
-        "#56B4E9",  # sky blue
-    ]
-    linestyles = ["-", "--", "-.", ":", "-", "--", "-."]
-    #linewidths = [2] * len(colors)
-    linewidths = [3, 3, 3, 3, 3, 3, 4]
-
-    style_cycle = itertools.cycle(zip(colors, linestyles, linewidths))
-
-    label_map = {
-        "Al_sulfate_mol": "Al$_2$(SO$_4$)$_3",
-        "Fe_sulfate_mol": "FeSO$_4$·7H$_2$O",
-        "Co_sulfate_mol": "CoSO$_4$·7H$_2$O",
-        "Cu_sulfate_mol": "CuSO$_4$",
-        "Ni_sulfate_mol": "NiSO$_4$·6H$_2$O",
-        "Mn_sulfate_mol": "MnSO$_4$·H$_2$O",
-        "NaOH_mole": "NaOH dose",   
-    }
-
-    for col in samples.select_dtypes(include="number").columns:
-        data = samples[col].dropna()
-        data = data[data > 0]
-        if len(data) == 0:
-            continue
-
-        log_data = np.log10(data)
-
-        color, ls, lw = next(style_cycle)
-
-        sns.kdeplot(
-            log_data,
-            label=label_map.get(col, col),
-            color=color,
-            linestyle=ls,
-            linewidth=lw
-        )
-
-    # --- labels OUTSIDE loop ---
-    plt.xlabel("log$_{10}$(Concentration)", fontsize=16)
-    plt.ylabel("Density", fontsize=18)
-    plt.tick_params(axis='both', labelsize=16)
-    plt.legend(fontsize=14.5, frameon=False, handlelength=2.5)
-
+    plt.xscale("log")
+    #plt.xlabel(col, fontsize=14)
+    plt.ylabel("Count", fontsize=17)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
     plt.tight_layout()
-    plt.savefig("lhs_input/kdePlot_all.png", dpi=300)
+    plt.savefig(f"lhs_input/hist_{col}.png")
     plt.close()
 
-    #pause
-    
-        
-except Exception as e:
-    print("ERROR: Error while defining param_ranges:")
-    print("   →", str(e))
-    raise
+
+plt.figure(figsize=(7, 5))
+
+# --- define styles ONCE ---
+colors = [
+    "#000000",  # black
+    "#0072B2",  # blue
+    "#D55E00",  # vermillion
+    "#009E73",  # bluish green
+    "#CC79A7",  # reddish purple
+    "#E69F00",  # orange
+    "#56B4E9",  # sky blue
+]
+linestyles = ["-", "--", "-.", ":", "-", "--", "-."]
+#linewidths = [2] * len(colors)
+linewidths = [3, 3, 3, 3, 3, 3, 4]
+
+style_cycle = itertools.cycle(zip(colors, linestyles, linewidths))
+
+label_map = {
+    "Al_sulfate_mol": "Al$_2$(SO$_4$)$_3",
+    "Fe_sulfate_mol": "FeSO$_4$·7H$_2$O",
+    "Co_sulfate_mol": "CoSO$_4$·7H$_2$O",
+    "Cu_sulfate_mol": "CuSO$_4$",
+    "Ni_sulfate_mol": "NiSO$_4$·6H$_2$O",
+    "Mn_sulfate_mol": "MnSO$_4$·H$_2$O",
+    "NaOH_mole": "NaOH dose",   
+}
+
+for col in samples.select_dtypes(include="number").columns:
+    data = samples[col].dropna()
+    data = data[data > 0]
+    if len(data) == 0:
+        continue
+
+    log_data = np.log10(data)
+
+    color, ls, lw = next(style_cycle)
+
+    sns.kdeplot(
+        log_data,
+        label=label_map.get(col, col),
+        color=color,
+        linestyle=ls,
+        linewidth=lw
+    )
+
+# --- labels OUTSIDE loop ---
+plt.xlabel("log$_{10}$(Concentration)", fontsize=16)
+plt.ylabel("Density", fontsize=18)
+plt.tick_params(axis='both', labelsize=16)
+plt.legend(fontsize=14.5, frameon=False, handlelength=2.5)
+
+plt.tight_layout()
+plt.savefig("lhs_input/kdePlot_all.png", dpi=300)
+plt.close()
+
 
 # ===============================================================
 # HEADER
