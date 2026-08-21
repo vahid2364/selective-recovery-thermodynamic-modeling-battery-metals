@@ -1,10 +1,12 @@
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import StrMethodFormatter
-import seaborn as sns
-import re
 import os
+import re
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib import gridspec
+from matplotlib.ticker import StrMethodFormatter
 pd.set_option('future.no_silent_downcasting', True)
 
 
@@ -22,15 +24,12 @@ MW = {
     "Ni": 58.69,
 }
 
-## mol/L 
 def mgL_to_moles(mgL, MW):
     mg = mgL                        # mg per liter
     g = mg / 1000                   # convert mg → g
     mol = g / MW                    # moles = g/MW
     return mol
 
-
-# %%
 
 def read_multisheet_excel(file_path):
     """
@@ -42,7 +41,7 @@ def read_multisheet_excel(file_path):
     try:
         excel_file = pd.ExcelFile(file_path)
         sheet_names = excel_file.sheet_names
-        print(f"📘 Found sheets: {sheet_names}\n")
+        print(f"Found sheets: {sheet_names}\n")
 
         for sheet in sheet_names:
             try:
@@ -56,8 +55,7 @@ def read_multisheet_excel(file_path):
                 if len(start_row) > 0:
                     start_row = start_row[0]
                     df.columns = df.iloc[start_row]
-                    df = df.drop(range(start_row + 1))
-                    df = df.reset_index(drop=True)
+                    df = df.iloc[start_row + 1:].reset_index(drop=True)
 
                 # Clean column names
                 df.columns = [str(c).strip() for c in df.columns]
@@ -86,13 +84,12 @@ def read_multisheet_excel(file_path):
                 print(f"ERROR: Error reading sheet '{sheet}': {e}")
 
     except FileNotFoundError:
-        print(f"🚫 File not found: {file_path}")
+        print(f"ERROR: File not found: {file_path}")
     except Exception as e:
         print(f"WARNING: Unexpected error while opening file: {e}")
 
     return all_data
 
-# %%
 
 
 def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
@@ -111,7 +108,7 @@ def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
     try:
         excel_file = pd.ExcelFile(file_path)
         sheet_names = excel_file.sheet_names
-        print(f"📘 Found sheets: {sheet_names}\n")
+        print(f"Found sheets: {sheet_names}\n")
 
         for sheet in sheet_names:
             try:
@@ -119,12 +116,7 @@ def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
                 df_raw = pd.read_excel(file_path, sheet_name=sheet, header=None)
                 df_raw = df_raw.fillna("")
 
-                # ---- 1️⃣ Extract Metadata Block (above the data table)
                 # Find where the data table begins (by keyword)
-                #start_idx = df_raw[df_raw.apply(
-                #    lambda x: x.astype(str).str.contains("NaOH Equivalents", case=False).any(), axis=1
-                #)].index
-                
                 mask = df_raw.apply(lambda x: x.astype(str).apply(lambda v: "NaOH Equivalents" in v if isinstance(v, str) else False)).any(axis=1)
                 start_idx = mask[mask].index
 
@@ -146,7 +138,7 @@ def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
                     metadata_dict["Sheet Name"] = sheet
                     metadata_records.append(metadata_dict)
 
-                # ---- 2️⃣ Extract Experimental Data Table
+                # Extract experimental data table
                 if data_start is not None:
                     df_data = df_raw.iloc[data_start:].copy()
                     df_data.columns = df_data.iloc[0]
@@ -161,7 +153,7 @@ def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
                             .str.replace(",", "", regex=False)
                             .str.replace(" ", "", regex=False)
                         )
-                        df_data[col] = pd.to_numeric(df_data[col], errors="ignore")
+                        df_data[col] = pd.to_numeric(df_data[col], errors="coerce")
 
                     all_data[sheet] = df_data
 
@@ -172,23 +164,19 @@ def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
             except Exception as e:
                 print(f"ERROR: Error reading sheet '{sheet}': {e}")
 
-        # ---- 3️⃣ Save all metadata
+        # Save all metadata
         if metadata_records:
             meta_df = pd.DataFrame(metadata_records)
             meta_df.to_csv(f"{save_dir}/_metadata_summary.csv", index=False)
-            print(f"\n🧾 Saved metadata summary: {save_dir}/_metadata_summary.csv")
+            print(f"\nOK: Saved metadata summary: {save_dir}/_metadata_summary.csv")
 
     except FileNotFoundError:
-        print(f"🚫 File not found: {file_path}")
+        print(f"ERROR: File not found: {file_path}")
     except Exception as e:
         print(f"WARNING: Unexpected error: {e}")
 
     return all_data, meta_df
 
-# %%
-
-import pandas as pd
-import numpy as np
 
 def clean_metadata_table(meta_df, save_path="cleaned_metadata.csv"):
     """
@@ -253,12 +241,6 @@ def clean_metadata_table(meta_df, save_path="cleaned_metadata.csv"):
 
     return df
 
-
-# %%
-
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
 
 
 def plot_sheets(
@@ -340,7 +322,7 @@ def plot_sheets(
 
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
-        plt.title(f"Experimental Results — {name}")
+        plt.title(f"Experimental Results - {name}")
         plt.tight_layout()
         plt.savefig(f"process_plot_{name.replace(' ', '_')}.png", dpi=300)
         plt.show()
@@ -360,7 +342,6 @@ def build_process_map(data_dict, sheet_pattern="46", target_element="Ni 231.604 
             continue
         
         # Extract numeric condition value (e.g., '10%' -> 10)
-        import re
         cond_match = re.search(r'(\d+)%', name)
         if not cond_match:
             continue
@@ -388,7 +369,7 @@ def build_process_map(data_dict, sheet_pattern="46", target_element="Ni 231.604 
     # Plot heatmap
     plt.figure(figsize=(8, 5))
     sns.heatmap(df_pivot, cmap="viridis", annot=False, cbar_kws={'label': 'Concentration (mg/L)'})
-    plt.title(f"Process Map — {target_element}")
+    plt.title(f"Process Map - {target_element}")
     plt.xlabel("NaOH Equivalents")
     plt.ylabel("Condition (%)")
     plt.tight_layout()
@@ -480,13 +461,6 @@ def plot_process_map_matrix(data_dict, sheet_pattern="46"):
     plt.suptitle("Process-Map Matrix (All Elements)", fontsize=14, y=1.02)
     plt.show()
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import re
-from matplotlib import gridspec
-
 def plot_custom_process_maps(
     data_dict,
     sheet_pattern="46",
@@ -495,7 +469,7 @@ def plot_custom_process_maps(
     unit_converter=None
 ):
     """
-    Plot a fixed 3×3 matrix of process maps with optional unit conversion.
+    Plot a fixed 3x3 matrix of process maps with optional unit conversion.
     """
 
     layout = [
@@ -611,13 +585,11 @@ if __name__ == "__main__":
 
     print(data_dict)
 
-    # %%
-    #data_dict.pop("CC-NRCan3-046 MN 30%", None)
+        #data_dict.pop("CC-NRCan3-046 MN 30%", None)
 
     Al_mol = mgL_to_moles(data_dict["CC-NRCan3-046 HTE 5%"]["Mn 257.610 nm ppm"], MW["Al"])
 
-    # %%
-
+    
     plot_sheets(data_dict, sheet_names=["CC-NRCan3-046 HTE 5%", "CC-NRCan3-046 HTE 10%", "CC-NRCan3-046 HTE 20%", "CC-NRCan3-046 HTE 30%", "CC-NRCan3-046 HTE 40%"],
                     x_col="NaOH Equivalents",
                     convert_units=True,
