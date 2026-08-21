@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Parse HTE ICP-OES Excel data for NaOH neutralization experiments.
+
+Each sheet is assumed to have a metadata block above a data table that starts
+with a row containing "NaOH Equivalents" as a column header.
+"""
+
 import os
 import re
 
@@ -6,16 +14,14 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import gridspec
-from matplotlib.ticker import StrMethodFormatter
+
 pd.set_option('future.no_silent_downcasting', True)
 
-
-plt.rcParams['figure.dpi'] = 150          # for inline plots
-plt.rcParams['savefig.dpi'] = 300         # for saved figures
-#plt.rcParams['font.family'] = 'Arial'          # or 'Times New Roman', 'Calibri', etc.
+plt.rcParams['figure.dpi'] = 150
+plt.rcParams['savefig.dpi'] = 300
 
 MW = {
-    "Al": 26.98, # g/mol
+    "Al": 26.98,
     "Co": 58.93,
     "Cu": 63.55,
     "Fe": 55.85,
@@ -24,178 +30,141 @@ MW = {
     "Ni": 58.69,
 }
 
-def mgL_to_moles(mgL, MW):
-    mg = mgL                        # mg per liter
-    g = mg / 1000                   # convert mg → g
-    mol = g / MW                    # moles = g/MW
-    return mol
+ELEMENTS = ["Al 396.152 nm ppm", "Fe 238.204 nm ppm", "Cu 327.395 nm ppm",
+            "Ni 231.604 nm ppm", "Co 238.892 nm ppm", "Mn 257.610 nm ppm"]
 
 
-def read_multisheet_excel(file_path):
-    """
-    Reads all sheets from an Excel file, cleans, and converts to numeric.
-    Returns a dictionary of cleaned DataFrames.
-    """
-    all_data = {}
-
-    try:
-        excel_file = pd.ExcelFile(file_path)
-        sheet_names = excel_file.sheet_names
-        print(f"Found sheets: {sheet_names}\n")
-
-        for sheet in sheet_names:
-            try:
-                # Read sheet (no assumption about header position)
-                df = pd.read_excel(file_path, sheet_name=sheet, header=None)
-
-                # Identify start of the actual data table
-                start_row = df[df.apply(lambda x: x.astype(str)
-                                        .str.contains("NaOH Equivalents", case=False)
-                                        .any(), axis=1)].index
-                if len(start_row) > 0:
-                    start_row = start_row[0]
-                    df.columns = df.iloc[start_row]
-                    df = df.iloc[start_row + 1:].reset_index(drop=True)
-
-                # Clean column names
-                df.columns = [str(c).strip() for c in df.columns]
-                df = df.dropna(axis=1, how='all')
-
-                # Convert all numeric-looking columns to numbers
-                for col in df.columns:
-                    df[col] = (
-                        df[col]
-                        .astype(str)
-                        .str.replace(",", "", regex=False)
-                        .str.replace(" ", "", regex=False)
-                        .replace(["", "NA", "nan"], np.nan)
-                    )
-                    df[col] = pd.to_numeric(df[col])
-
-                # Second pass: coerce any remaining objects to numeric
-                for col in df.columns:
-                    if df[col].dtype == "object":
-                        df[col] = pd.to_numeric(df[col], errors="coerce")
-
-                all_data[sheet] = df
-                print(f"OK: Loaded '{sheet}' → {df.shape[0]} rows, {df.shape[1]} cols")
-
-            except Exception as e:
-                print(f"ERROR: Error reading sheet '{sheet}': {e}")
-
-    except FileNotFoundError:
-        print(f"ERROR: File not found: {file_path}")
-    except Exception as e:
-        print(f"WARNING: Unexpected error while opening file: {e}")
-
-    return all_data
+def mgL_to_molL(mgL, mw):
+    return mgL / 1000.0 / mw
 
 
+def _find_header_row(df_raw):
+    """Return the index of the row containing 'NaOH Equivalents', or None."""
+    mask = df_raw.apply(
+        lambda col: col.astype(str).str.contains("NaOH Equivalents", case=False)
+    ).any(axis=1)
+    idx = mask[mask].index
+    return idx[0] if len(idx) else None
 
-def read_multisheet_with_metadata(file_path, save_dir="parsed_data"):
-    """
-    Reads all sheets from an Excel file, cleans numeric data,
-    extracts metadata (experimental overview), and saves both.
-    """
 
-    # Create output directory if missing
+def _to_numeric_df(df):
+    """Strip whitespace/commas and coerce all columns to numeric."""
+    for col in df.columns:
+        df[col] = (
+            df[col].astype(str)
+            .str.replace(",", "", regex=False)
+            .str.strip()
+            .replace(["", "NA", "nan"], np.nan)
+        )
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
+
+
+def _extract_condition(sheet_name):
+    """Parse the numeric leachate fraction from a sheet name like '10%'."""
+    m = re.search(r'(\d+)%', sheet_name)
+    return float(m.group(1)) if m else None
+
+
+def _collect_records(data_dict, sheet_pattern, convert_units, mw_dict, unit_converter):
+    """Gather per-row records from sheets matching sheet_pattern."""
+    records = []
+    for name, df in data_dict.items():
+        if sheet_pattern not in name:
+            continue
+        condition = _extract_condition(name)
+        if condition is None:
+            continue
+        skip = {"NaOH Equivalents", "Vol of NaOH (mL)"}
+        for _, row in df.iterrows():
+            for col in df.columns:
+                if col in skip or not pd.api.types.is_numeric_dtype(df[col]):
+                    continue
+                value = row[col]
+                if convert_units and unit_converter is not None:
+                    elem = col.split()[0]
+                    if elem in mw_dict:
+                        value = unit_converter(value, mw_dict[elem])
+                records.append({
+                    "Condition (%)": condition,
+                    "NaOH Equivalents": row["NaOH Equivalents"],
+                    "Vol of NaOH (mL)": row.get("Vol of NaOH (mL)", np.nan),
+                    "Element": col,
+                    "Concentration": value,
+                })
+    return pd.DataFrame(records)
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def read_sheets(file_path):
+    """Read all sheets, detect the data table by header keyword, return dict of DataFrames."""
+    excel = pd.ExcelFile(file_path)
+    data = {}
+    for sheet in excel.sheet_names:
+        df_raw = pd.read_excel(file_path, sheet_name=sheet, header=None)
+        hr = _find_header_row(df_raw)
+        if hr is None:
+            print(f"WARNING: 'NaOH Equivalents' header not found in '{sheet}', skipping.")
+            continue
+        df = df_raw.iloc[hr:].copy()
+        df.columns = df.iloc[0].astype(str).str.strip()
+        df = df.iloc[1:].reset_index(drop=True)
+        df = df.dropna(axis=1, how="all")
+        df = _to_numeric_df(df)
+        data[sheet] = df
+        print(f"  {sheet}: {df.shape[0]} rows x {df.shape[1]} cols")
+    return data
+
+
+def read_sheets_with_metadata(file_path, save_dir="parsed_data"):
+    """Read sheets and extract the metadata block (rows above the data table)."""
     os.makedirs(save_dir, exist_ok=True)
+    excel = pd.ExcelFile(file_path)
+    data = {}
+    meta_records = []
 
-    meta_df = None
-    all_data = {}
-    metadata_records = []
+    for sheet in excel.sheet_names:
+        df_raw = pd.read_excel(file_path, sheet_name=sheet, header=None).fillna("")
+        hr = _find_header_row(df_raw)
+        if hr is None:
+            continue
 
-    try:
-        excel_file = pd.ExcelFile(file_path)
-        sheet_names = excel_file.sheet_names
-        print(f"Found sheets: {sheet_names}\n")
+        # metadata block
+        meta_block = df_raw.iloc[:hr].dropna(how="all")
+        meta_block = meta_block.loc[:, meta_block.apply(
+            lambda c: c.astype(str).str.strip().ne("").any()
+        )]
+        meta = {"Sheet Name": sheet}
+        for _, row in meta_block.iterrows():
+            key = str(row.iloc[0]).strip().replace("\n", " ")
+            val = str(row.iloc[1]).strip().replace("\n", " ") if len(row) > 1 else ""
+            if key:
+                meta[key] = val
+        meta_records.append(meta)
 
-        for sheet in sheet_names:
-            try:
-                # Read full sheet (no header)
-                df_raw = pd.read_excel(file_path, sheet_name=sheet, header=None)
-                df_raw = df_raw.fillna("")
+        # data table
+        df = df_raw.iloc[hr:].copy()
+        df.columns = df.iloc[0].astype(str).str.strip()
+        df = df.iloc[1:].reset_index(drop=True).replace(["", "NA", "nan"], np.nan)
+        df = _to_numeric_df(df)
+        df.to_csv(f"{save_dir}/{sheet}_data.csv", index=False)
+        data[sheet] = df
 
-                # Find where the data table begins (by keyword)
-                mask = df_raw.apply(lambda x: x.astype(str).apply(lambda v: "NaOH Equivalents" in v if isinstance(v, str) else False)).any(axis=1)
-                start_idx = mask[mask].index
-
-                data_start = start_idx[0] if len(start_idx) > 0 else None
-
-                # Extract metadata section (rows before table)
-                if data_start:
-                    meta_df = df_raw.iloc[:data_start].dropna(how='all').copy()
-                    meta_df = meta_df.loc[:, meta_df.apply(lambda x: x.astype(str).str.strip().ne('').any())]
-
-                    # Flatten metadata into key:value pairs
-                    metadata_dict = {}
-                    for _, row in meta_df.iterrows():
-                        key = str(row[0]).strip().replace("\n", " ")
-                        if len(row) > 1:
-                            value = str(row[1]).strip().replace("\n", " ")
-                            metadata_dict[key] = value
-
-                    metadata_dict["Sheet Name"] = sheet
-                    metadata_records.append(metadata_dict)
-
-                # Extract experimental data table
-                if data_start is not None:
-                    df_data = df_raw.iloc[data_start:].copy()
-                    df_data.columns = df_data.iloc[0]
-                    df_data = df_data.drop(df_data.index[0]).reset_index(drop=True)
-                    df_data.columns = [str(c).strip() for c in df_data.columns]
-                    df_data = df_data.replace(["", "NA", "nan"], np.nan)
-
-                    # Convert numeric-looking columns
-                    for col in df_data.columns:
-                        df_data[col] = (
-                            df_data[col].astype(str)
-                            .str.replace(",", "", regex=False)
-                            .str.replace(" ", "", regex=False)
-                        )
-                        df_data[col] = pd.to_numeric(df_data[col], errors="coerce")
-
-                    all_data[sheet] = df_data
-
-                    # ---- Save each data table
-                    df_data.to_csv(f"{save_dir}/{sheet}_data.csv", index=False)
-                    print(f"OK: Saved data table for '{sheet}'")
-
-            except Exception as e:
-                print(f"ERROR: Error reading sheet '{sheet}': {e}")
-
-        # Save all metadata
-        if metadata_records:
-            meta_df = pd.DataFrame(metadata_records)
-            meta_df.to_csv(f"{save_dir}/_metadata_summary.csv", index=False)
-            print(f"\nOK: Saved metadata summary: {save_dir}/_metadata_summary.csv")
-
-    except FileNotFoundError:
-        print(f"ERROR: File not found: {file_path}")
-    except Exception as e:
-        print(f"WARNING: Unexpected error: {e}")
-
-    return all_data, meta_df
+    meta_df = pd.DataFrame(meta_records)
+    meta_df.to_csv(f"{save_dir}/_metadata_summary.csv", index=False)
+    print(f"Saved {len(data)} sheets and metadata to '{save_dir}/'")
+    return data, meta_df
 
 
-def clean_metadata_table(meta_df, save_path="cleaned_metadata.csv"):
-    """
-    Cleans and standardizes metadata summary table.
-    Handles missing columns gracefully and avoids deprecated behavior.
-    """
-
+def clean_metadata(meta_df, save_path="cleaned_metadata.csv"):
+    """Rename, cast, and derive columns from the raw metadata summary."""
     df = meta_df.copy()
+    df.columns = df.columns.astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
 
-    # --- Normalize and clean column names ---
-    df.columns = (
-        df.columns.astype(str)
-        .str.strip()
-        .str.replace("\n", " ")
-        .str.replace("  ", " ", regex=False)
-    )
-
-    # --- Rename columns (only those that exist) ---
-    rename_map = {
+    rename = {
         "Volume of  battery solution in vial": "V_battery_vial_%",
         "Total vial volume": "V_vial_mL",
         "NaOH Stock solution  concentration": "NaOH_M",
@@ -204,405 +173,159 @@ def clean_metadata_table(meta_df, save_path="cleaned_metadata.csv"):
         "Total reactor volume": "V_reactor_mL",
         "Volume of  battery solution in reactor": "V_battery_reactor_mL",
     }
-    df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
+    df = df.rename(columns={k: v for k, v in rename.items() if k in df.columns})
 
-    # --- Ensure expected columns exist (add NaNs if missing) ---
-    expected_cols = [
-        "V_vial_mL", "V_battery_vial_%", "NaOH_M", "t_stir_h",
-        "V_reactor_mL", "V_battery_reactor_mL", "Experimental method",
-        "Sheet Name", "T_condition"
-    ]
-    for col in expected_cols:
+    numeric = ["V_vial_mL", "V_battery_vial_%", "NaOH_M",
+               "t_stir_h", "V_reactor_mL", "V_battery_reactor_mL"]
+    for col in numeric:
         if col not in df.columns:
             df[col] = np.nan
-
-    # --- Convert numeric columns safely ---
-    numeric_cols = ["V_vial_mL", "V_battery_vial_%", "NaOH_M",
-                    "t_stir_h", "V_reactor_mL", "V_battery_reactor_mL"]
-    for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # --- Fill missing reactor values ---
     df["V_reactor_mL"] = df["V_reactor_mL"].fillna(df["V_vial_mL"])
     df["V_battery_reactor_mL"] = df["V_battery_reactor_mL"].fillna(
         (df["V_battery_vial_%"] / 100) * df["V_reactor_mL"]
     )
-
-    # --- Clean categorical/text fields ---
-    for col in ["T_condition", "Experimental method", "Sheet Name"]:
-        df[col] = df[col].astype(str).str.strip().replace("nan", np.nan)
-
-    # --- Compute derived feature: mmol NaOH per reactor ---
     df["NaOH_mmol_total"] = df["NaOH_M"] * df["V_reactor_mL"]
 
-    # --- Save cleaned file ---
-    df.to_csv(save_path, index=False)
-    print(f"OK: Cleaned metadata saved to: {save_path}")
+    for col in ["T_condition", "Experimental method", "Sheet Name"]:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip().replace("nan", np.nan)
 
+    df.to_csv(save_path, index=False)
     return df
 
 
-
-def plot_sheets(
-    data_dict,
-    sheet_names,
-    x_col="NaOH Equivalents",
-    y_columns=None,
-    convert_units=False,
-    mw_dict=None,
-    unit_converter=None,
-):
-    """
-    Plot selected sheets with optional unit conversion and aligned secondary x-axis
-    based on measured NaOH volume.
-    """
-
+def plot_sheets(data_dict, sheet_names, x_col="NaOH Equivalents",
+                y_columns=None, convert_units=False, mw_dict=None, unit_converter=None):
     for name in sheet_names:
         if name not in data_dict:
-            print(f"WARNING: Sheet '{name}' not found.")
+            print(f"WARNING: sheet '{name}' not found.")
             continue
 
         df = data_dict[name].dropna(axis=1, how="all").copy()
-        df.columns = df.columns.astype(str).str.strip()
-
         if x_col not in df or "Vol of NaOH (mL)" not in df:
-            print(f"ERROR: Required columns missing in '{name}'.")
+            print(f"WARNING: required columns missing in '{name}'.")
             continue
 
-        y_cols = (
-            [c for c in df.columns if c != x_col and pd.api.types.is_numeric_dtype(df[c])]
-            if y_columns is None else y_columns
-        )
-
+        y_cols = y_columns or [c for c in df.columns
+                               if c != x_col and pd.api.types.is_numeric_dtype(df[c])]
         if not y_cols:
-            print(f"WARNING: No numeric columns to plot in '{name}'.")
             continue
 
-        # Optional unit conversion
         if convert_units:
-            if unit_converter is None or mw_dict is None:
-                raise ValueError("unit_converter and mw_dict required")
-
             for c in y_cols:
                 elem = c.split()[0]
-                if elem in mw_dict:
+                if elem in (mw_dict or {}):
                     df[c] = unit_converter(df[c], mw_dict[elem])
 
-        # Ensure monotonic x for interpolation
         df = df.sort_values(x_col)
-
         fig, ax = plt.subplots(figsize=(8, 5))
-
         for c in y_cols:
             ax.plot(df[x_col], df[c], marker="o", label=c)
 
+        xmin, xmax = df[x_col].iloc[0], df[x_col].iloc[-1]
+        ax.set_xlim(xmin, xmax)
         ax.set_xlabel(x_col)
         ax.set_ylabel("Concentration (mol/L)" if convert_units else "Concentration (mg/L)")
 
-        # Force identical limits
-        xmin, xmax = df[x_col].iloc[[0, -1]]
-        ax.set_xlim(xmin, xmax)
-
-        # Top axis (measured data)
         ax_top = ax.twiny()
         ax_top.set_xlim(xmin, xmax)
-        ax_top.set_xlabel("NaOH added (mL in 1 mL Vial)")
-
+        ax_top.set_xlabel("NaOH added (mL)")
         ticks = ax.get_xticks()
         ticks = ticks[(ticks >= xmin) & (ticks <= xmax)]
-
-        vol = np.interp(
-            ticks,
-            df[x_col].values,
-            df["Vol of NaOH (mL)"].values,
-        )
-
         ax_top.set_xticks(ticks)
-        ax_top.set_xticklabels([f"{v:.2f}" for v in vol])
+        ax_top.set_xticklabels([
+            f"{v:.2f}" for v in np.interp(ticks, df[x_col].values, df["Vol of NaOH (mL)"].values)
+        ])
 
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
-        plt.title(f"Experimental Results - {name}")
+        plt.title(name)
         plt.tight_layout()
         plt.savefig(f"process_plot_{name.replace(' ', '_')}.png", dpi=300)
         plt.show()
 
 
+def plot_process_map(data_dict, sheet_pattern="46 HTE", target_element="Ni 231.604 nm ppm"):
+    """Single-element process map (heatmap) over leachate fraction vs NaOH equivalents."""
+    df_all = _collect_records(data_dict, sheet_pattern,
+                              convert_units=False, mw_dict=None, unit_converter=None)
+    df_all = df_all[df_all["Element"] == target_element]
+    if df_all.empty:
+        print(f"WARNING: no data for '{target_element}'")
+        return
 
-def build_process_map(data_dict, sheet_pattern="46", target_element="Ni 231.604 nm ppm"):
-    """
-    Build process maps (heatmaps) showing metal concentration vs NaOH equivalents and condition.
-    Assumes sheet names encode process variable (e.g., '5%', '10%', ...).
-    """
-    records = []
-
-    # Loop through selected sheets
-    for name, df in data_dict.items():
-        if sheet_pattern not in name:
-            continue
-        
-        # Extract numeric condition value (e.g., '10%' -> 10)
-        cond_match = re.search(r'(\d+)%', name)
-        if not cond_match:
-            continue
-        condition = float(cond_match.group(1))
-
-        # Ensure numeric conversion
-        df = df.apply(pd.to_numeric, errors="coerce")
-
-        if "NaOH Equivalents" not in df.columns or target_element not in df.columns:
-            continue
-
-        for _, row in df.iterrows():
-            records.append({
-                "Condition (%)": condition,
-                "NaOH Equivalents": row["NaOH Equivalents"],
-                "Concentration": row[target_element]
-            })
-
-    # Combine into one DataFrame
-    df_all = pd.DataFrame(records)
-    df_pivot = df_all.pivot_table(
-        index="Condition (%)", columns="NaOH Equivalents", values="Concentration"
-    )
-
-    # Plot heatmap
+    pivot = df_all.pivot_table(index="Condition (%)", columns="NaOH Equivalents",
+                               values="Concentration")
     plt.figure(figsize=(8, 5))
-    sns.heatmap(df_pivot, cmap="viridis", annot=False, cbar_kws={'label': 'Concentration (mg/L)'})
-    plt.title(f"Process Map - {target_element}")
-    plt.xlabel("NaOH Equivalents")
-    plt.ylabel("Condition (%)")
+    sns.heatmap(pivot, cmap="viridis", annot=False,
+                cbar_kws={"label": "Concentration (mg/L)"})
+    plt.title(target_element)
     plt.tight_layout()
     plt.show()
+    return pivot
 
-    return df_pivot
 
-def plot_process_map_matrix(data_dict, sheet_pattern="46"):
-    """
-    Build a grid of process maps (heatmaps) for all elements across selected sheets.
-
-    Parameters
-    ----------
-    data_dict : dict
-        Dictionary of DataFrames from read_multisheet_excel()
-    sheet_pattern : str
-        Pattern to filter relevant sheets (e.g., '46')
-    """
-
-    records = []
-
-    # ---- Collect all numeric data across sheets ----
-    for name, df in data_dict.items():
-        if sheet_pattern not in name:
-            continue
-
-        # Extract numeric condition value (e.g., 10 from '10%')
-        cond_match = re.search(r'(\d+)%', name)
-        if not cond_match:
-            continue
-        condition = float(cond_match.group(1))
-
-        df = df.apply(pd.to_numeric, errors="coerce")
-
-        if "NaOH Equivalents" not in df.columns:
-            continue
-
-        # Record all element columns
-        for _, row in df.iterrows():
-            for col in df.columns:
-                if col not in ["NaOH Equivalents", "Vol of NaOH (mL)"] and pd.api.types.is_numeric_dtype(df[col]):
-                    records.append({
-                        "Condition (%)": condition,
-                        "NaOH Equivalents": row["NaOH Equivalents"],
-                        "Element": col,
-                        "Concentration": row[col]
-                    })
-
-    df_all = pd.DataFrame(records)
+def plot_process_map_grid(data_dict, sheet_pattern="46 HTE",
+                          convert_units=False, mw_dict=None, unit_converter=None):
+    """3x2 grid of process maps for the six main ICP elements."""
+    df_all = _collect_records(data_dict, sheet_pattern,
+                              convert_units, mw_dict, unit_converter)
     if df_all.empty:
-        print("WARNING: No valid numeric data found for plotting.")
+        print("WARNING: no data found.")
         return
 
-    # ---- Determine unique elements ----
-    elements = sorted(df_all["Element"].unique())
-    n = len(elements)
-    ncols = 3
-    nrows = int(np.ceil(n / ncols))
-
-    # ---- Create subplot grid ----
-    fig, axes = plt.subplots(nrows, ncols, figsize=(4*ncols, 3.5*nrows), constrained_layout=True)
-    axes = axes.flatten()
-
-    for idx, element in enumerate(elements):
-        ax = axes[idx]
-        df_elem = df_all[df_all["Element"] == element]
-
-        pivot = df_elem.pivot_table(
-            index="Condition (%)",
-            columns="NaOH Equivalents",
-            values="Concentration"
-        )
-
-        sns.heatmap(pivot, cmap="viridis", ax=ax, cbar=False)
-        ax.set_title(element, fontsize=10)
-        ax.set_xlabel("NaOH Equivalents")
-        ax.set_ylabel("Condition (%)")
-
-    # Remove any unused subplots
-    for j in range(idx + 1, len(axes)):
-        fig.delaxes(axes[j])
-
-    # ---- Add a single shared colorbar ----
-    cbar_ax = fig.add_axes([0.93, 0.15, 0.015, 0.7])
-    sm = plt.cm.ScalarMappable(cmap="viridis")
-    sm.set_array(df_all["Concentration"].values)
-    fig.colorbar(sm, cax=cbar_ax, label="Concentration (mg/L)")
-
-    plt.suptitle("Process-Map Matrix (All Elements)", fontsize=14, y=1.02)
-    plt.show()
-
-def plot_custom_process_maps(
-    data_dict,
-    sheet_pattern="46",
-    convert_units=False,
-    mw_dict=None,
-    unit_converter=None
-):
-    """
-    Plot a fixed 3x3 matrix of process maps with optional unit conversion.
-    """
-
-    layout = [
-        ["Al 396.152 nm ppm", "Fe 238.204 nm ppm", "Cu 327.395 nm ppm"],
-        ["Ni 231.604 nm ppm", "Co 238.892 nm ppm", "Mn 257.610 nm ppm"],
-        #["Li 610.365 nm ppm", None, None]
-    ]
-
-    records = []
-
-    for name, df in data_dict.items():
-        if sheet_pattern not in name:
-            continue
-
-        cond_match = re.search(r'(\d+)%', name)
-        if not cond_match:
-            continue
-        condition = float(cond_match.group(1))
-
-        df = df.apply(pd.to_numeric, errors="coerce")
-        if "NaOH Equivalents" not in df.columns:
-            continue
-
-        for _, row in df.iterrows():
-            for col in df.columns:
-                if col in ["NaOH Equivalents", "Vol of NaOH (mL)"]:
-                    continue
-                if not pd.api.types.is_numeric_dtype(df[col]):
-                    continue
-
-                value = row[col]
-
-                # ---- Optional unit conversion ----
-                if convert_units:
-                    if unit_converter is None or mw_dict is None:
-                        raise ValueError("unit_converter and mw_dict must be provided when convert_units=True")
-
-                    element = col.split()[0]  # e.g. "Al" from "Al 396.152 nm ppm"
-                    value = unit_converter(value, mw_dict[element])
-
-                records.append({
-                    "Condition (%)": condition,
-                    "NaOH Equivalents": row["NaOH Equivalents"],
-                    "Vol of NaOH (mL)": row["Vol of NaOH (mL)"],
-                    "Element": col,
-                    "Concentration": value
-                })
-
-    df_all = pd.DataFrame(records)
-    if df_all.empty:
-        print("WARNING: No valid numeric data found for plotting.")
-        return
-
-    fig = plt.figure(figsize=(13, 10))
-    gs = gridspec.GridSpec(3, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.3, hspace=0.2)
-    cmap = "viridis"
-
-    for i in range(2): # 3
-        for j in range(3):
-            ax = fig.add_subplot(gs[i, j])
-            element = layout[i][j]
-
-            if element is None:
-                ax.axis("off")
-                continue
-
-            df_elem = df_all[df_all["Element"] == element]
-            if df_elem.empty:
-                ax.text(0.4, 0.4, "No data", ha="center", va="center")
-                ax.axis("off")
-                continue
-
-            pivot = df_elem.pivot_table(
-                index="Condition (%)",
-                columns="NaOH Equivalents",
-                values="Concentration"
-            )
-
-            sns.heatmap(
-                pivot,
-                cmap="cividis",
-                ax=ax,
-                cbar=False,
-                square=True,
-                linewidths=0.4,
-                linecolor="white"
-            )
-
-            ax.set_title(element, fontsize=11, fontweight="bold")
-            ax.set_xlabel("NaOH Equivalents")
-            ax.set_ylabel("Battery Leachate Volume in Vial (%)")
-
-    cbar_ax = fig.add_subplot(gs[:, 3])
-    sm = plt.cm.ScalarMappable(cmap=cmap)
-    sm.set_array(df_all["Concentration"].values)
-
+    layout = [row for row in [
+        ELEMENTS[:3],
+        ELEMENTS[3:],
+    ]]
+    nrows, ncols = len(layout), 3
     unit_label = "mol/L" if convert_units else "mg/L"
+
+    fig = plt.figure(figsize=(13, 8))
+    gs = gridspec.GridSpec(nrows, ncols + 1, width_ratios=[1, 1, 1, 0.05],
+                           wspace=0.3, hspace=0.25)
+
+    for i, row_elements in enumerate(layout):
+        for j, element in enumerate(row_elements):
+            ax = fig.add_subplot(gs[i, j])
+            subset = df_all[df_all["Element"] == element]
+            if subset.empty:
+                ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
+                ax.axis("off")
+                continue
+            pivot = subset.pivot_table(index="Condition (%)", columns="NaOH Equivalents",
+                                       values="Concentration")
+            sns.heatmap(pivot, cmap="cividis", ax=ax, cbar=False,
+                        square=True, linewidths=0.4, linecolor="white")
+            ax.set_title(element.split()[0], fontsize=11, fontweight="bold")
+            ax.set_xlabel("NaOH Equivalents")
+            ax.set_ylabel("Leachate vol. (%)")
+
+    cbar_ax = fig.add_subplot(gs[:, ncols])
+    sm = plt.cm.ScalarMappable(cmap="cividis")
+    sm.set_array(df_all["Concentration"].dropna().values)
     fig.colorbar(sm, cax=cbar_ax, label=f"Concentration ({unit_label})")
 
-    plt.savefig("process_map_matrix.png", dpi=300)
+    plt.savefig("process_map_grid.png", dpi=300, bbox_inches="tight")
     plt.show()
-
     return df_all
 
-if __name__ == "__main__": 
 
-    # Example usage:
-    file_path = "2025_HTE_sample_data_updated4.xlsx"
-    #data_dict = read_multisheet_excel(file_path)
-    data_dict, meta_df = read_multisheet_with_metadata(file_path)
-    meta_df = pd.read_csv("parsed_data/_metadata_summary.csv")
-    meta_df_clean = clean_metadata_table(meta_df, save_path="cleaned_metadata.csv")
+if __name__ == "__main__":
+    FILE = "2025_HTE_sample_data_updated4.xlsx"
+    PATTERN = "46 HTE"
 
-    print(data_dict)
+    data_dict, meta_df = read_sheets_with_metadata(FILE)
+    meta_clean = clean_metadata(meta_df, save_path="cleaned_metadata.csv")
 
-        #data_dict.pop("CC-NRCan3-046 MN 30%", None)
+    sheets = [s for s in data_dict if PATTERN in s]
+    plot_sheets(data_dict, sheet_names=sheets, x_col="NaOH Equivalents",
+                convert_units=True, mw_dict=MW, unit_converter=mgL_to_molL)
 
-    Al_mol = mgL_to_moles(data_dict["CC-NRCan3-046 HTE 5%"]["Mn 257.610 nm ppm"], MW["Al"])
+    plot_process_map(data_dict, sheet_pattern=PATTERN, target_element="Ni 231.604 nm ppm")
+    plot_process_map(data_dict, sheet_pattern=PATTERN, target_element="Co 238.892 nm ppm")
 
-    
-    plot_sheets(data_dict, sheet_names=["CC-NRCan3-046 HTE 5%", "CC-NRCan3-046 HTE 10%", "CC-NRCan3-046 HTE 20%", "CC-NRCan3-046 HTE 30%", "CC-NRCan3-046 HTE 40%"],
-                    x_col="NaOH Equivalents",
-                    convert_units=True,
-                    mw_dict=MW,
-                    unit_converter=mgL_to_moles
-                )
-    build_process_map(data_dict, sheet_pattern="46 HTE", target_element="Ni 231.604 nm ppm")
-    build_process_map(data_dict, sheet_pattern="46 HTE", target_element="Co 238.892 nm ppm")
-    #plot_process_map_matrix(data_dict, sheet_pattern="46")
-    df_all = plot_custom_process_maps(data_dict, sheet_pattern="46 HTE", 
-                                    convert_units=True,
-                                    mw_dict=MW,
-                                    unit_converter=mgL_to_moles
-                                    )
-
-
+    plot_process_map_grid(data_dict, sheet_pattern=PATTERN,
+                          convert_units=True, mw_dict=MW, unit_converter=mgL_to_molL)
