@@ -94,7 +94,7 @@ python src/plot_pourbaix_speciation.py
 
 If you use this code or data, please cite:
 
-> Attari V., Cronin C., Cao B., Jansonius R.P., Greenwood M., Hattrick-Simpers J.
+> Attari V., Cronin C., Jansonius R.P., Greenwood M., Hattrick-Simpers J.
 > *High-throughput Modeling of Thermodynamic Pathways Governing Digestion and Crystallization in Hydrometallurgical Battery Recycling.*
 > *(journal, year, DOI — to be updated upon publication)*
 
