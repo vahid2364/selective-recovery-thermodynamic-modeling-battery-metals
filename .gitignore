@@ -16,6 +16,7 @@
 main5.*
 main6.*
 main7.*
+main8.*
 
 # Claude / LLM
 .claude/
