@@ -11,7 +11,7 @@ Telescope Innovations, Vancouver, BC *(Cronin, Jansonius)*
 ---
 
 ![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22133299.svg)](https://doi.org/10.5281/zenodo.22133299)
 ![Python](https://img.shields.io/badge/Python-≥3.10-blue?logo=python&logoColor=white)
 ![PHREEQC](https://img.shields.io/badge/PHREEQC-3.8.6-green)
 ![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS-lightgrey)
