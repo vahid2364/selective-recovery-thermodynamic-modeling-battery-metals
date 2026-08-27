@@ -2,11 +2,11 @@
 
 *High-throughput Modeling of Thermodynamic Pathways Governing Digestion and Crystallization in Hydrometallurgical Battery Recycling*
 
-**Vahid Attari · Cara Cronin · Blessing Cao · Ryan P. Jansonius · Michael Greenwood · Jason Hattrick-Simpers**
+**Vahid Attari · Cara Cronin · Ryan P. Jansonius · Michael Greenwood · Jason Hattrick-Simpers**
 
 CanmetMaterials, Natural Resources Canada, Mississauga, ON *(Attari, Hattrick-Simpers)*  
 CanmetMaterials, Natural Resources Canada, Hamilton, ON *(Greenwood)*  
-Telescope Innovations, Vancouver, BC *(Cronin, Cao, Jansonius)*
+Telescope Innovations, Vancouver, BC *(Cronin, Jansonius)*
 
 ---
 

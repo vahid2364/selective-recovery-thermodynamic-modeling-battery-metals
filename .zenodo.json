@@ -1,0 +1,43 @@
+{
+  "title": "Thermodynamic Modeling of NaOH Neutralization in Metal Sulfate Leachates: Code and Simulation Data",
+  "description": "PHREEQC-based thermodynamic simulation framework for modeling NaOH neutralization and selective metal hydroxide precipitation from battery leachate solutions. Includes Latin Hypercube Sampling (LHS) design of experiments, automated PHREEQC input generation, speciation result parsing, and figure plotting scripts. Developed to support the associated journal article.",
+  "upload_type": "software",
+  "publication_date": "2026",
+  "license": "other-open",
+  "creators": [
+    {
+      "name": "Attari, Vahid",
+      "affiliation": "CanmetMaterials, Natural Resources Canada, Mississauga, ON, Canada",
+      "orcid": "0000-0003-3507-8847"
+    },
+    {
+      "name": "Cronin, Cara",
+      "affiliation": "Telescope Innovations, Vancouver, BC, Canada"
+    },
+    {
+      "name": "Jansonius, Ryan P.",
+      "affiliation": "Telescope Innovations, Vancouver, BC, Canada"
+    },
+    {
+      "name": "Greenwood, Michael",
+      "affiliation": "CanmetMaterials, Natural Resources Canada, Hamilton, ON, Canada"
+    },
+    {
+      "name": "Hattrick-Simpers, Jason",
+      "affiliation": "CanmetMaterials, Natural Resources Canada, Mississauga, ON, Canada"
+    }
+  ],
+  "keywords": [
+    "PHREEQC",
+    "thermodynamic modeling",
+    "battery recycling",
+    "hydrometallurgy",
+    "NaOH neutralization",
+    "metal sulfate leachate",
+    "SIT activity model",
+    "Latin Hypercube Sampling",
+    "selective precipitation",
+    "critical minerals"
+  ],
+  "access_right": "open"
+}
